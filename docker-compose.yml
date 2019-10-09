@@ -1,0 +1,38 @@
+version: '3.4'
+
+networks:
+  local_auto_tier:
+    driver: bridge
+
+
+services:
+    event_rules_storage_api:
+        image: event_rules_storage_api:latest
+        build:
+            context: ./event_rules_storage_api/
+            dockerfile: Dockerfile
+        restart: always
+        container_name: event_rules_storage_api
+        environment:
+          FLASK_DEBUG: 1
+        ports:
+            - 5000:5000
+        depends_on:
+            - db
+        networks:
+            - local_auto_tier
+
+    db:
+      image: postgres
+      container_name: local_postgres_db
+      restart: always
+      environment:
+        POSTGRES_DB: "testdb"
+        POSTGRES_USER: "testadmin"
+        POSTGRES_PASSWORD: "testtest"
+        POSTGRES_HOST: "db"
+      expose:
+        - "5432"
+      networks:
+          - local_auto_tier
+
