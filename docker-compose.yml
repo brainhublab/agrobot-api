@@ -36,3 +36,36 @@ services:
       networks:
           - local_auto_tier
 
+    # Mosquitto broker for mqtt protocol connection
+    mosquitto:
+      image: eclipse-mosquitto
+      container_name: mosquitto
+      expose:
+        - "1883"
+        - "9001"
+      ports:
+        - "1883:1883"
+        - "9001:9001"
+      network_mode: host
+      # networks:
+      #   - local_auto_tier
+
+    communication_handler:
+      image: communication_handler:latest
+      network_mode: host
+      build:
+          context: ./communication_handler/
+          dockerfile: Dockerfile
+      restart: always
+      container_name: communication_handler
+      expose:
+        - "8080"
+      ports:
+        - "8080:8080"
+      env_file:
+        - '.env-communication-handler'
+      depends_on:
+          - mosquitto
+      # networks:
+          # - local_auto_tier
+
