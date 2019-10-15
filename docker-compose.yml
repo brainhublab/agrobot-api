@@ -69,3 +69,22 @@ services:
       # networks:
           # - local_auto_tier
 
+    event_handler:
+      image: event_handler:latest
+      network_mode: host
+      build:
+          context: ./event_handler/
+          dockerfile: Dockerfile
+      restart: always
+      container_name: event_handler
+      expose:
+        - "8081"
+      ports:
+        - "8081:8081"
+      env_file:
+        - '.env-communication-service'
+      depends_on:
+          - mosquitto
+      # networks:
+          # - local_auto_tier
+

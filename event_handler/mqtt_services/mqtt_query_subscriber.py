@@ -9,22 +9,19 @@ import json
 import sys
 import logging
 sys.path.insert(0, os.path.abspath('..'))
-from http_requests.requestсссs import post_sensor_raw_data
+from configure_instructions_engine.conf_engine import CongfGenerator
 
 logging.basicConfig(level=logging.INFO)
 
 
 class MqttClientSub(object):
     def __init__(self, listener=False):
-        self.sub_from_ctrl_topic = os.environ.get("CONTROLLER_RAW_DATA_TO_COM_SERVICE")
-        self.sub_from_event_handler_topic = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
-        self.pub_to_event_handler_topic = os.environ.get("COM_SERVICE_RAW_DATA_TO_EVENT_HANDLER")
-        self.pub_to_ctrl_topic = os.environ.get("COM_SERVICE_INSTRUCTIONS_TO_CONTROLLER")
+
+        self.sub_from_com_service = os.environ.get("COM_SERVICE_RAW_DATA_TO_EVENT_HANDLER")
+        self.pub_to_com_service = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
 
         self.connect = False
         self.listener = listener
-
-        self.auth_token = os.environ.get("TOKEN")
 
         self.broker_url = os.environ.get("BROKER_HOST")
         self.broker_port = int(os.environ.get("BROKER_PORT"))
@@ -34,37 +31,27 @@ class MqttClientSub(object):
         self.connect = True
 
         if self.listener:
-            self.mqttc.subscribe(self.sub_from_ctrl_topic)
-            self.mqttc.subscribe(self.sub_from_event_handler_topic)
-            self.mqttc.message_callback_add(self.sub_from_ctrl_topic, self.on_message_from_controller)
-            self.mqttc.message_callback_add(self.sub_from_event_handler_topic, self.on_message_from_handler)
+            self.mqttc.subscribe(self.sub_from_com_service)
+            self.mqttc.message_callback_add(self.sub_from_com_service, self.on_message_from_com_service)
         self.logger.debug("{0}".format(rc))
 
-    def on_message_from_controller(self, client, userdata, msg):
-        print("[*][CS][CO] New data from controller")
+    def on_message_from_com_service(self, client, userdata, msg):
+        print("[*][EH][CS] New data from communication service")
+
         mesg = json.loads(msg.payload)["message"]
         print(mesg)
         try:
-            print("[*][CS][CO] New data sended to Global API")
-            post_sensor_raw_data(self.auth_token, mesg["sensor_id"],
-                                 mesg["title"], mesg["value"])
-        except Exception as e:
-            raise e
-        try:
-            print("[*][CS][CO] New data sended to Handler")
-            MqttClientPub(topic=self.pub_to_event_handler_topic,
-                          broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=mesg).bootstrap_mqtt().start()
+            print("[*][EH] create new instruction with new data.")
+            response = CongfGenerator(data=mesg).create_instruction()
         except Exception as e:
             raise e
 
-    def on_message_from_handler(self, client, userdata, msg):
-        mesg = json.loads(msg.payload)["message"]
         try:
-            print("[*][CS][EH] New instruction sended to Controller")
-            MqttClientPub(topic=self.pub_to_ctrl_topic,
+            print("[*][EH][CS] New instruction sended to communication service")
+            print(response)
+            MqttClientPub(topic=self.pub_to_com_service,
                           broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=mesg).bootstrap_mqtt().start()
+                          broker_port=self.broker_port, data=response).bootstrap_mqtt().start()
         except Exception as e:
             raise e
 
@@ -104,7 +91,7 @@ class MqttClientSub(object):
         return self
 
     def start(self):
-        self.logger.info("{0}".format("[*][CS][*] Query listener is Up!"))
+        self.logger.info("{0}".format("[*][EH][*]  Query listener is Up!"))
         self.mqttc.loop_start()
 
         while True:
@@ -112,5 +99,5 @@ class MqttClientSub(object):
             if self.connect == True:
                 pass
             else:
-                self.logger.debug("[!][CS] Attempting to connect.")
+                self.logger.debug("[!][EH] Attempting to connect.")
 
