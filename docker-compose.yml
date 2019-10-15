@@ -50,20 +50,20 @@ services:
       # networks:
       #   - local_auto_tier
 
-    communication_handler:
-      image: communication_handler:latest
+    communication_service:
+      image: communication_service:latest
       network_mode: host
       build:
-          context: ./communication_handler/
+          context: ./communication_service/
           dockerfile: Dockerfile
       restart: always
-      container_name: communication_handler
+      container_name: communication_service
       expose:
         - "8080"
       ports:
         - "8080:8080"
       env_file:
-        - '.env-communication-handler'
+        - '.env-communication-service'
       depends_on:
           - mosquitto
       # networks:

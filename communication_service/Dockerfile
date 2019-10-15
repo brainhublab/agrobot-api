@@ -1,11 +1,11 @@
 FROM python:3.7.4-alpine3.9
 ENV PYTHONUNBUFFERED 1
 
-RUN mkdir /usr/src/communication_handler
+RUN mkdir /usr/src/communication_service
 
-COPY . /usr/src/communication_handle
+COPY . /usr/src/communication_service
 
-WORKDIR /usr/src/communication_handle/
+WORKDIR /usr/src/communication_service/
 
 RUN apk add --no-cache --virtual .build-deps \
     ca-certificates gcc postgresql-dev linux-headers musl-dev \

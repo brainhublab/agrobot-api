@@ -2,16 +2,9 @@ import requests
 import os
 import json
 
-GLOBAL_SERVER_HOST = os.environ.get("GLOBAL_SERVER_HOST")
-GLOBAL_SERVER_PORT = os.environ.get("GLOBAL_SERVER_PORT")
-# GLOBAL_SERVER_RAW_DATA_ROUTE = os.environ.get("GLOBAL_SERVER_RAW_DATA_ROUTE")
-# GLOBAL_SERVER_SENSORS_ROUTE = os.environ.get("GLOBAL_SERVER_SENSORS_ROUTE")
 
-# GLOBAL_SERVER_HOST = "http://localhost"
-# GLOBAL_SERVER_PORT = "9123"
-
-GLOBAL_SERVER_RAW_DATA_ROUTE = "http://localhost:9123/grow_auto_api/rsdata/"
-GLOBAL_SERVER_SENSORS_ROUTE = "http://localhost:9123/grow_auto_api/sensors/"
+GLOBAL_SERVER_RAW_DATA_ROUTE = os.environ.get("GLOBAL_SERVER_RAW_DATA_ROUTE")
+GLOBAL_SERVER_SENSORS_ROUTE = os.environ.get("GLOBAL_SERVER_SENSORS_ROUTE")
 
 token = "fe742bcb7bfa0c3ff680be5f84118321c2d2088b"
 
@@ -92,8 +85,8 @@ def post_sensor_raw_data(token, sensor_id, title, value):
     try:
         new_data_posted = requests.post(url, headers=headers, data=data)
     except Exception as e:
-        raise(e)
-    raise new_data_posted.status_code
+        raise e
+    return new_data_posted.status_code
 
 
 # post_sensor_raw_data(token, 46, "ahahahah", 4)

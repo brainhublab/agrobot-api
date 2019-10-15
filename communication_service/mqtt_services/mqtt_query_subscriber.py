@@ -1,4 +1,5 @@
 import paho.mqtt.client as paho
+from .mqtt_query_publisher import MqttClientPub
 import os
 import socket
 import ssl
@@ -6,49 +7,69 @@ from time import sleep
 from random import uniform
 import json
 import sys
+import logging
 sys.path.insert(0, os.path.abspath('..'))
-# import sys
 from http_requests.requestсссs import post_sensor_raw_data
 
-import logging
 logging.basicConfig(level=logging.INFO)
-
-auth_token = os.environ.get("TOKEN")
-print(auth_token)
-
-# Refactored original source - https://github.com/mariocannistra/python-paho-mqtt-for-aws-iot
 
 
 class MqttClientSub(object):
+    def __init__(self, listener=False):
+        self.sub_from_ctrl_topic = os.environ.get("CONTROLLER_RAW_DATA_TO_COM_SERVICE")
+        self.sub_from_event_handler_topic = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
+        self.pub_to_event_handler_topic = os.environ.get("COM_SERVICE_RAW_DATA_TO_EVENT_HANDLER")
+        self.pub_to_ctrl_topic = os.environ.get("COM_SERVICE_INSTRUCTIONS_TO_CONTROLLER")
 
-    def __init__(self, listener=False, topic="default", broker_url="localhost", broker_port="1883"):
         self.connect = False
         self.listener = listener
-        self.topic = topic
-        self.broker_url = broker_url
-        self.broker_port = broker_port
+
+        self.auth_token = os.environ.get("TOKEN")
+
+        self.broker_url = os.environ.get("BROKER_HOST")
+        self.broker_port = int(os.environ.get("BROKER_PORT"))
         self.logger = logging.getLogger(repr(self))
 
     def __on_connect(self, client, userdata, flags, rc):
         self.connect = True
 
         if self.listener:
-            self.mqttc.subscribe(self.topic)
-
+            self.mqttc.subscribe(self.sub_from_ctrl_topic)
+            self.mqttc.subscribe(self.sub_from_event_handler_topic)
+            self.mqttc.message_callback_add(self.sub_from_ctrl_topic, self.on_message_from_controller)
+            self.mqttc.message_callback_add(self.sub_from_event_handler_topic, self.on_message_from_handler)
         self.logger.debug("{0}".format(rc))
 
-    def on_message(self, client, userdata, msg):
+    def on_message_from_controller(self, client, userdata, msg):
+        print("[*][1] New data from controller")
         mesg = json.loads(msg.payload)["message"]
+        print(mesg)
         try:
-            post_sensor_raw_data(auth_token, mesg["sensor_id"],
+            post_sensor_raw_data(self.auth_token, mesg["sensor_id"],
                                  mesg["title"], mesg["value"])
+            print("[*][2] New data sendet to Global API")
+        except Exception as e:
+            raise e
+        try:
+            MqttClientPub(topic=self.pub_to_event_handler_topic,
+                          broker_url=self.broker_url,
+                          broker_port=self.broker_port, data=mesg).bootstrap_mqtt().start()
+            print("[*][3] New data sendet to Handler")
         except Exception as e:
             raise e
 
-        # print(mesg)
-        # print(mesg["title"])
-        # print(mesg["sensor_id"])
-        # print(mesg["value"])
+    def on_message_from_handler(self, client, userdata, msg):
+        mesg = json.loads(msg.payload)["message"]
+        print("[**][1] New instruction from Handler")
+        try:
+            MqttClientPub(topic=self.pub_to_ctrl_topic,
+                          broker_url=self.broker_url,
+                          broker_port=self.broker_port, data=mesg).bootstrap_mqtt().start()
+            print("[**][2] New instruction sendet to Controller")
+        except Exception as e:
+            raise e
+
+    def on_message(self, client, userdata, msg):
         self.logger.info("{0}, {1} - {2}".format(userdata, msg.topic, msg.payload))
 
     def __on_log(self, client, userdata, level, buf):
@@ -78,23 +99,19 @@ class MqttClientSub(object):
         #     ciphers=None)
 
         result_of_connection = self.mqttc.connect(self.broker_url, self.broker_port, keepalive=120)
-
         if result_of_connection == 0:
             self.connect = True
 
         return self
 
     def start(self):
+        self.logger.info("{0}".format("[*][!][*] Query listener is Up!"))
         self.mqttc.loop_start()
 
         while True:
             sleep(2)
             if self.connect == True:
                 pass
-                # self.mqttc.publish(self.topic, json.dumps({"message": "Hello COMP680"}), qos=1)
             else:
                 self.logger.debug("Attempting to connect.")
-
-
-    # PubSub(listener=True, topic="chat-evets").bootstrap_mqtt().start()
 
