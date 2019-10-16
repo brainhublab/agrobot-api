@@ -9,7 +9,7 @@ import json
 import sys
 import logging
 sys.path.insert(0, os.path.abspath('..'))
-from http_requests.requestсссs import post_sensor_raw_data
+from http_requests.requestss import LocalServerRequests
 
 logging.basicConfig(level=logging.INFO)
 
@@ -46,8 +46,10 @@ class MqttClientSub(object):
         print(mesg)
         try:
             print("[*][CS][CO] New data sended to Global API")
-            post_sensor_raw_data(self.auth_token, mesg["sensor_id"],
-                                 mesg["title"], mesg["value"])
+            LocalServerRequests(self.auth_token, mesg).post_sensor_raw_data()
+            # post_sensor_raw_data(self.auth_token, mesg["sensor_id"],
+            #                      mesg["title"], mesg["value"])
+
         except Exception as e:
             raise e
         try:
@@ -81,10 +83,6 @@ class MqttClientSub(object):
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log
 
-        # broker_url = os.environ.get("BROKER_HOST")
-        # broker_port = os.environ.get("BROKER_PORT")
-        # broker_url = "localhost"
-        # broker_port = 1883
 
         # caPath = "./authority.pem" # Root certificate authority, comes from AWS with a long, long name
         # certPath = "./2bafa20887-certificate.pem.crt"
