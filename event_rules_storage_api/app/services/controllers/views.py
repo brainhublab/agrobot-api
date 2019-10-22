@@ -3,7 +3,7 @@ from . import api
 # and also to import all models that we will use in our view (for example model "example1")
 from ... import db
 from ...models.controllers import Controller
-from ..utils import parser, is_there_an_object
+from ..utils import parser, is_there_an_object, auth_check
 
 from flask_restful import Resource
 
@@ -35,11 +35,13 @@ class Controllers(Resource):
     # https://docs.sqlalchemy.org/en/latest/orm/query.html
 
     # Put request
+    @auth_check
     def get(self):
         all_controllers = Controller.query.order_by("updated_on")
         return [x.toDict() for x in all_controllers], 200
 
     # Delete request
+    @auth_check
     def post(self):
         args = parser_post_put.parse_args()
 
@@ -66,6 +68,7 @@ class CControllers(Resource):
     # SQLAlchemy documentation queryng:
     # https://docs.sqlalchemy.org/en/latest/orm/query.html
 
+    @auth_check
     def get(self, id):
         controller = Controller.query.filter_by(id=id).first()
         if is_there_an_object(controller):
@@ -75,6 +78,7 @@ class CControllers(Resource):
                 "message": "Obj not found!"
             }, 404
 
+    @auth_check
     def put(self, id):
         args = parser_post_put.parse_args()
         controller_to_update = Controller.query.filter_by(id=id).first()

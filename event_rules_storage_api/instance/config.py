@@ -14,6 +14,7 @@ HOST = "http://localhost:8081/"
 
 SQLALCHEMY_DATABASE_URI = "postgresql://testadmin:testtest@db/testdb"
 
+TOKEN = "fe742bcb7bfa0c3ff680be5f84118321c2d2088b"
 # SQLALCHEMY_DATABASE_URI = "postgresql://{}:{}@{}/{}".format(POSTGRES_USER,
 #                                                             POSTGRES_PASSWORD,
 #                                                             POSTGRES_HOST,

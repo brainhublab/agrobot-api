@@ -42,7 +42,7 @@ class MqttClientSub(object):
         print(mesg)
         try:
             print("[*][EH] create new instruction with new data.")
-            response = CongfGenerator(data=mesg).create_instruction()
+            response = CongfGenerator(data=mesg, token=mesg["token"]).create_instruction()
         except Exception as e:
             raise e
 

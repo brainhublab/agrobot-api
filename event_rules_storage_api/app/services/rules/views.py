@@ -4,7 +4,7 @@ from . import api
 from ... import db
 from ...models.rules import Rule
 from ...models.controllers import Controller
-from ..utils import parser, is_there_an_object
+from ..utils import parser, is_there_an_object, auth_check
 
 from flask_restful import Resource
 
@@ -37,6 +37,7 @@ parser_put.add_argument("rule_shema", required=True,
 
 class Rules(Resource):
     # Get request
+    @auth_check
     def get(self):
         args = parser_get.parse_args()
         if args["controller_id"] is not None:
@@ -47,6 +48,7 @@ class Rules(Resource):
             return [x.toDict() for x in all_rules], 200
 
     # post request
+    @auth_check
     def post(self):
         args = parser_post.parse_args()
         fk_controller = Controller.query.filter_by(id=args["controller_id"]).first()
@@ -71,6 +73,7 @@ api.add_resource(Rules, "/api/rules/")
 class CRule(Resource):
 
     # GET request
+    @auth_check
     def get(self, id):
         rule = Rule.query.filter_by(id=id).first()
         if is_there_an_object(rule):
@@ -81,6 +84,7 @@ class CRule(Resource):
             }, 404
 
     # put request
+    @auth_check
     def put(self, id):
         args = parser_put.parse_args()
         rule_to_update = Rule.query.filter_by(id=id).first()

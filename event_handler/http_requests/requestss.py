@@ -30,7 +30,12 @@ class EngineRequests(object):
     def get_rules_local_server(self):
         url = self.local_automation_rules_url
 
-        response = requests.get(url)
+        try:
+            headers = self._create_request_header()
+        except Exception as e:
+            raise e
+
+        response = requests.get(url, headers=headers)
         if self._check_response(response):
             response_data = json.loads(response.content)
             return response_data
@@ -40,12 +45,16 @@ class EngineRequests(object):
 
     def controllers_config(self, obj_id=None,):
         url = self.local_controller_config_url
+        try:
+            headers = self._create_request_header()
+        except Exception as e:
+            raise e
 
         if obj_id:
             if (isinstance(obj_id, int)):
                 url += '{}/'.format(obj_id)
 
-                response = requests.get(url)
+                response = requests.get(url,  headers=headers)
                 if self._check_response(response):
                     response_data = json.loads(response.content)
                     return response_data
@@ -53,7 +62,7 @@ class EngineRequests(object):
                     response_data = None
                     return response_data
         else:
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             if self._check_response(response):
                 response_data = json.loads(response.content)
                 return response_data
