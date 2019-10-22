@@ -17,6 +17,8 @@ services:
           FLASK_DEBUG: 1
         ports:
             - 5000:5000
+        env_file:
+          - '.env'
         depends_on:
             - db
         networks:
