@@ -19,6 +19,8 @@ class MqttClientSub(object):
 
         self.sub_from_com_service = os.environ.get("COM_SERVICE_RAW_DATA_TO_EVENT_HANDLER")
         self.pub_to_com_service = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
+        self.eh_user = os.environ.get("EH_MQTT_USER")
+        self.eh_pwd = os.environ.get("EH_MQTT_PASSWORD")
 
         self.connect = False
         self.listener = listener
@@ -61,9 +63,12 @@ class MqttClientSub(object):
     def __on_log(self, client, userdata, level, buf):
         self.logger.debug("{0}, {1}, {2}, {3}".format(client, userdata, level, buf))
 
-    def bootstrap_mqtt(self):
+    def _broker_auth(self):
+        self.mqttc.username_pw_set(username=self.eh_user, password=self.eh_pwd)
 
+    def bootstrap_mqtt(self):
         self.mqttc = paho.Client()
+        self._broker_auth()
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log

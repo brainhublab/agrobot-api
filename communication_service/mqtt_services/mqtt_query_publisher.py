@@ -13,6 +13,9 @@ logging.basicConfig(level=logging.INFO)
 class MqttClientPub(object):
 
     def __init__(self, topic="default", broker_url="localhost", broker_port=1883, data={}):
+        self.eh_user = os.environ.get("COM_MQTT_USER")
+        self.eh_pwd = os.environ.get("COM_MQTT_PASSWORD")
+
         self.connect = False
         self.topic = topic
         self.broker_url = broker_url
@@ -24,9 +27,12 @@ class MqttClientPub(object):
         self.connect = True
         self.logger.debug("{0}".format(rc))
 
-    def bootstrap_mqtt(self):
+    def _broker_auth(self):
+        self.mqttc.username_pw_set(username=self.eh_user, password=self.eh_pwd)
 
+    def bootstrap_mqtt(self):
         self.mqttc = paho.Client()
+        self._broker_auth()
         self.mqttc.on_connect = self.__on_connect
 
         # caPath = "./authority.pem" # Root certificate authority, comes from AWS with a long, long name

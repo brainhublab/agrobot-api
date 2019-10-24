@@ -1,0 +1,4 @@
+user <UserName>
+topic write <TopicName>
+topic read <SameOrAnotherTopicName>
+
