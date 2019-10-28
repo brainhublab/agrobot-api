@@ -1,5 +1,4 @@
 import paho.mqtt.client as paho
-from .mqtt_query_publisher import MqttClientPub
 import os
 from time import sleep
 import json
@@ -37,20 +36,18 @@ class MqttClientSub(object):
         self.logger.debug("{0}".format(rc))
 
     def on_message_from_com_service(self, client, userdata, msg):
-        print("[*][EH][CS] New data from communication service")
+        print("[*] [<--] [EH][CS] New data from Communication Service.\n")
         decrypt_msg = json.loads(EnDeCrypt(self.en_de_key, msg.payload).DeCrypt())
         try:
-            print("[*][EH] create new instruction with new data.")
+            print("[*] [--] [EH] create new instruction with new data.\n")
             response = CongfGenerator(data=decrypt_msg, token=decrypt_msg["token"]).create_instruction()
         except Exception as e:
             raise e
         try:
-            print("[*][EH][CS] New instruction sended to communication service")
+            print("[*] [-->] [EH][CS] New instruction sended to Communication Service.\n")
             response = json.dumps(response)
             encrypt_msg = EnDeCrypt(self.en_de_key, response).enCrypt()
-            MqttClientPub(topic=self.pub_to_com_service,
-                          broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=encrypt_msg).bootstrap_mqtt().start()
+            self._mqttPubMsg(self.pub_to_com_service, encrypt_msg)
         except Exception as e:
             raise e
 
@@ -77,13 +74,22 @@ class MqttClientSub(object):
         return self
 
     def start(self):
-        self.logger.info("{0}".format("[*][EH][*]  Query listener is Up!"))
+        self.logger.info("{0}".format("[*] [EH] [*]  Query listener is Up!\n"))
         self.mqttc.loop_start()
 
         while True:
             sleep(2)
-            if self.connect == True:
+            if self.connect is True:
                 pass
             else:
-                self.logger.debug("[!][EH] Attempting to connect.")
+                self.logger.debug("[!] [EH] [!] Attempting to connect!\n")
+
+    def _mqttPubMsg(self, topic, data):
+        while True:
+            sleep(2)
+            if self.connect is True:
+                self.mqttc.publish(topic, data, qos=1)
+                break
+            else:
+                self.logger.debug("[!] [EH] [!] Attempting to connect!\n")
 

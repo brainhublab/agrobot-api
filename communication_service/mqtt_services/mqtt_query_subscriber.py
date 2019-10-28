@@ -1,5 +1,4 @@
 import paho.mqtt.client as paho
-from .mqtt_query_publisher import MqttClientPub
 import os
 from time import sleep
 import json
@@ -42,28 +41,26 @@ class MqttClientSub(object):
         self.logger.debug("{0}".format(rc))
 
     def on_message_from_controller(self, client, userdata, msg):
-        print("[*][CS][CO] New data from controller")
+        print("[*] [<--] [CS][CO] New data from Controller.\n")
         decrypt_mesg = json.loads(EnDeCrypt(self.en_de_key, msg.payload).DeCrypt())
         try:
-            print("[*][CS][CO] New data sended to Global API")
+            print("[*] [-->] [CS][GA] New data sended to Global API\n")
             LocalServerRequests(self.auth_token, decrypt_mesg).post_sensor_raw_data()
         except Exception as e:
             raise e
         try:
-            print("[*][CS][CO] New data sended to Handler")
-            MqttClientPub(topic=self.pub_to_event_handler_topic,
-                          broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=msg.payload).bootstrap_mqtt().start()
+            print("[*] [-->] [CS][CO] New data sended to Handler.\n")
+            self._mqttPubMsg(self.pub_to_event_handler_topic, msg.payload)
         except Exception as e:
             raise e
 
     def on_message_from_handler(self, client, userdata, msg):
         """Just resent data from handler to controller"""
         try:
-            print("[*][CS][EH] New instruction sended to Controller")
-            MqttClientPub(topic=self.pub_to_ctrl_topic,
-                          broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=msg.payload).bootstrap_mqtt().start()
+            print("[*] [<--] [CS][EH] New instruction come from Handler\n")
+            print("[*] [-->] [CS][CO] New instruction sended to Controller\n")
+
+            self._mqttPubMsg(self.pub_to_ctrl_topic, msg.payload)
         except Exception as e:
             raise e
 
@@ -90,13 +87,22 @@ class MqttClientSub(object):
         return self
 
     def start(self):
-        self.logger.info("{0}".format("[*][CS][*] Query listener is Up!"))
+        self.logger.info("{0}".format("[*] [CS] [*] Query listener is Up!\n"))
         self.mqttc.loop_start()
 
         while True:
             sleep(2)
-            if self.connect == True:
+            if self.connect is True:
                 pass
             else:
-                self.logger.debug("[!][CS] Attempting to connect.")
+                self.logger.debug("[!] [CS] [!] Attempting to connect!\n")
+
+    def _mqttPubMsg(self, topic, data):
+        while True:
+            sleep(2)
+            if self.connect is True:
+                self.mqttc.publish(topic, data, qos=1)
+                break
+            else:
+                self.logger.debug("[!] [EH] [!] Attempting to connect!\n")
 
