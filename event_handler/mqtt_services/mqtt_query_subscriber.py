@@ -1,15 +1,13 @@
 import paho.mqtt.client as paho
 from .mqtt_query_publisher import MqttClientPub
 import os
-import socket
-import ssl
 from time import sleep
-from random import uniform
 import json
 import sys
 import logging
 sys.path.insert(0, os.path.abspath('..'))
 from configure_instructions_engine.conf_engine import CongfGenerator
+from en_de_crypter.en_de_crypter import EnDeCrypt
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,6 +19,7 @@ class MqttClientSub(object):
         self.pub_to_com_service = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
         self.eh_user = os.environ.get("EH_MQTT_USER")
         self.eh_pwd = os.environ.get("EH_MQTT_PASSWORD")
+        self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
 
         self.connect = False
         self.listener = listener
@@ -39,21 +38,19 @@ class MqttClientSub(object):
 
     def on_message_from_com_service(self, client, userdata, msg):
         print("[*][EH][CS] New data from communication service")
-
-        mesg = json.loads(msg.payload)["message"]
-        print(mesg)
+        decrypt_msg = json.loads(EnDeCrypt(self.en_de_key, msg.payload).DeCrypt())
         try:
             print("[*][EH] create new instruction with new data.")
-            response = CongfGenerator(data=mesg, token=mesg["token"]).create_instruction()
+            response = CongfGenerator(data=decrypt_msg, token=decrypt_msg["token"]).create_instruction()
         except Exception as e:
             raise e
-
         try:
             print("[*][EH][CS] New instruction sended to communication service")
-            print(response)
+            response = json.dumps(response)
+            encrypt_msg = EnDeCrypt(self.en_de_key, response).enCrypt()
             MqttClientPub(topic=self.pub_to_com_service,
                           broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=response).bootstrap_mqtt().start()
+                          broker_port=self.broker_port, data=encrypt_msg).bootstrap_mqtt().start()
         except Exception as e:
             raise e
 
@@ -72,22 +69,6 @@ class MqttClientSub(object):
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log
-
-        # broker_url = os.environ.get("BROKER_HOST")
-        # broker_port = os.environ.get("BROKER_PORT")
-        # broker_url = "localhost"
-        # broker_port = 1883
-
-        # caPath = "./authority.pem" # Root certificate authority, comes from AWS with a long, long name
-        # certPath = "./2bafa20887-certificate.pem.crt"
-        # keyPath = "./2bafa20887-private.pem.key"
-        #
-        # self.mqttc.tls_set(caPath,
-        #     certfile=certPath,
-        #     keyfile=keyPath,
-        #     cert_reqs=ssl.CERT_REQUIRED,
-        #     tls_version=ssl.PROTOCOL_TLSv1_2,
-        #     ciphers=None)
 
         result_of_connection = self.mqttc.connect(self.broker_url, self.broker_port, keepalive=120)
         if result_of_connection == 0:

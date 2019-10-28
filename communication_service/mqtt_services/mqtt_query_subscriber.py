@@ -1,15 +1,13 @@
 import paho.mqtt.client as paho
 from .mqtt_query_publisher import MqttClientPub
 import os
-import socket
-import ssl
 from time import sleep
-from random import uniform
 import json
 import sys
 import logging
 sys.path.insert(0, os.path.abspath('..'))
 from http_requests.requestss import LocalServerRequests
+from en_de_crypter.en_de_crypter import EnDeCrypt
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,6 +20,7 @@ class MqttClientSub(object):
         self.pub_to_ctrl_topic = os.environ.get("COM_SERVICE_INSTRUCTIONS_TO_CONTROLLER")
         self.eh_user = os.environ.get("COM_MQTT_USER")
         self.eh_pwd = os.environ.get("COM_MQTT_PASSWORD")
+        self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
 
         self.connect = False
         self.listener = listener
@@ -44,31 +43,27 @@ class MqttClientSub(object):
 
     def on_message_from_controller(self, client, userdata, msg):
         print("[*][CS][CO] New data from controller")
-        mesg = json.loads(msg.payload)["message"]
-        print(mesg)
+        decrypt_mesg = json.loads(EnDeCrypt(self.en_de_key, msg.payload).DeCrypt())
         try:
             print("[*][CS][CO] New data sended to Global API")
-            LocalServerRequests(self.auth_token, mesg).post_sensor_raw_data()
-            # post_sensor_raw_data(self.auth_token, mesg["sensor_id"],
-            #                      mesg["title"], mesg["value"])
-
+            LocalServerRequests(self.auth_token, decrypt_mesg).post_sensor_raw_data()
         except Exception as e:
             raise e
         try:
             print("[*][CS][CO] New data sended to Handler")
             MqttClientPub(topic=self.pub_to_event_handler_topic,
                           broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=mesg).bootstrap_mqtt().start()
+                          broker_port=self.broker_port, data=msg.payload).bootstrap_mqtt().start()
         except Exception as e:
             raise e
 
     def on_message_from_handler(self, client, userdata, msg):
-        mesg = json.loads(msg.payload)["message"]
+        """Just resent data from handler to controller"""
         try:
             print("[*][CS][EH] New instruction sended to Controller")
             MqttClientPub(topic=self.pub_to_ctrl_topic,
                           broker_url=self.broker_url,
-                          broker_port=self.broker_port, data=mesg).bootstrap_mqtt().start()
+                          broker_port=self.broker_port, data=msg.payload).bootstrap_mqtt().start()
         except Exception as e:
             raise e
 
@@ -87,18 +82,6 @@ class MqttClientSub(object):
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log
-
-
-        # caPath = "./authority.pem" # Root certificate authority, comes from AWS with a long, long name
-        # certPath = "./2bafa20887-certificate.pem.crt"
-        # keyPath = "./2bafa20887-private.pem.key"
-        #
-        # self.mqttc.tls_set(caPath,
-        #     certfile=certPath,
-        #     keyfile=keyPath,
-        #     cert_reqs=ssl.CERT_REQUIRED,
-        #     tls_version=ssl.PROTOCOL_TLSv1_2,
-        #     ciphers=None)
 
         result_of_connection = self.mqttc.connect(self.broker_url, self.broker_port, keepalive=120)
         if result_of_connection == 0:
