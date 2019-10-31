@@ -24,9 +24,12 @@ class LocalServerRequests(object):
         except Exception as e:
             raise e
 
-        data["sensor"] = sensor_url
-        data["title"] = self.data["title"]
-        data["value"] = self.data["value"]
+        try:
+            data["sensor"] = sensor_url
+            data["title"] = self.data["title"]
+            data["value"] = self.data["value"]
+        except Exception as e:
+            raise e
 
         try:
             headers = self._create_request_header()

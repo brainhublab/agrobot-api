@@ -5,7 +5,7 @@ import json
 import sys
 import logging
 sys.path.insert(0, os.path.abspath('..'))
-from configure_instructions_engine.conf_engine import CongfGenerator
+from configure_instructions_engine.conf_engine import InstructionGenerator
 from en_de_crypter.en_de_crypter import EnDeCrypt
 
 logging.basicConfig(level=logging.INFO)
@@ -40,13 +40,13 @@ class MqttClientSub(object):
         decrypt_msg = json.loads(EnDeCrypt(self.en_de_key, msg.payload).DeCrypt())
         try:
             print("[*] [--] [EH] create new instruction with new data.\n")
-            response = CongfGenerator(data=decrypt_msg, token=decrypt_msg["token"]).create_instruction()
+            instruction = InstructionGenerator(data=decrypt_msg, token=decrypt_msg["token"]).create_instruction()
         except Exception as e:
             raise e
         try:
             print("[*] [-->] [EH][CS] New instruction sended to Communication Service.\n")
-            response = json.dumps(response)
-            encrypt_msg = EnDeCrypt(self.en_de_key, response).enCrypt()
+            instruction = json.dumps(instruction)
+            encrypt_msg = EnDeCrypt(self.en_de_key, instruction).enCrypt()
             self._mqttPubMsg(self.pub_to_com_service, encrypt_msg)
         except Exception as e:
             raise e

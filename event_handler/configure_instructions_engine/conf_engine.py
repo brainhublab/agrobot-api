@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from http_requests.requestss import EngineRequests
 
 
-class CongfGenerator(object):
+class InstructionGenerator(object):
     def __init__(self, data={}, token=None):
         self.data = data
         self.token = token
