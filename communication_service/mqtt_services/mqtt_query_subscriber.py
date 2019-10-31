@@ -49,7 +49,7 @@ class MqttClientSub(object):
         critical_handler.setLevel(logging.CRITICAL)
 
         # create formatter
-        formatter = logging.Formatter('[%(levelname)s] - %(asctime)s - %(name)s - %(message)s')
+        formatter = logging.Formatter('\n[%(levelname)s] - %(asctime)s - %(name)s - %(message)s')
 
         # add formatter to handlers
         ch.setFormatter(formatter)
@@ -80,7 +80,7 @@ class MqttClientSub(object):
         try:
             decrypt_mesg = json.loads(EnDeCrypt(self.en_de_key, msg.payload).DeCrypt())
         except Exception as e:
-            self.logger.critical("\n[!] [EN_DE_CRYPTER] Fail decrypt data from controller\nerr: {}\n".format(e))
+            self.logger.critical("\n[!] [EN_DE_CRYPTER] Fail to decrypt data from Controller\nerr: {}\n".format(e))
 
         try:
             LocalServerRequests(self.auth_token, decrypt_mesg).post_sensor_raw_data()

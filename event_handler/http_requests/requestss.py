@@ -35,7 +35,11 @@ class EngineRequests(object):
         except Exception as e:
             raise e
 
-        response = requests.get(url, headers=headers)
+        try:
+            response = requests.get(url, headers=headers)
+        except Exception as e:
+            raise e
+
         if self._check_response(response):
             response_data = json.loads(response.content)
             return response_data
@@ -53,8 +57,11 @@ class EngineRequests(object):
         if obj_id:
             if (isinstance(obj_id, int)):
                 url += '{}/'.format(obj_id)
+                try:
+                    response = requests.get(url,  headers=headers)
+                except Exception as e:
+                    raise e
 
-                response = requests.get(url,  headers=headers)
                 if self._check_response(response):
                     response_data = json.loads(response.content)
                     return response_data
@@ -62,14 +69,17 @@ class EngineRequests(object):
                     response_data = None
                     return response_data
         else:
-            response = requests.get(url, headers=headers)
+            try:
+                response = requests.get(url, headers=headers)
+            except Exception as e:
+                raise e
+
             if self._check_response(response):
                 response_data = json.loads(response.content)
                 return response_data
             else:
                 response_data = None
                 return response_data
-
 
     def get_g_sensor_raw_data(self,
                               obj_id=None,
@@ -80,8 +90,11 @@ class EngineRequests(object):
                               sensor__controller__sector__workspace_id=None,
                               from_date=None,
                               to_date=None):
+        try:
+            headers = self._create_request_header()
+        except Exception as e:
+            raise e
 
-        headers = self._create_request_header()
         url = self.g_raw_data_url
         if obj_id:
             if (isinstance(obj_id, int)):
@@ -111,9 +124,12 @@ class EngineRequests(object):
                 # TODO: validate date
                 url = url + 'to_date={}&'.format(to_date)
 
-        response = requests.get(url, headers=headers)
-        response_data = json.loads(response.content)
+        try:
+            response = requests.get(url, headers=headers)
+        except Exception as e:
+            raise e
 
+        response_data = json.loads(response.content)
         results = response_data["results"]
         return results
 
