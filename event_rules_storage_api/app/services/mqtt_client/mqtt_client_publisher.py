@@ -1,22 +1,19 @@
 import paho.mqtt.client as paho
 import os
-from time import sleep
-import json
-import sys
 import logging
-sys.path.insert(0, os.path.abspath('..'))
-from configure_instructions_engine.conf_engine import InstructionGenerator
-from en_de_crypter.en_de_crypter import EnDeCrypt
+import json
+from time import sleep
+from flask import current_app as app
+from ..en_de_crypter.en_de_crypter import EnDeCrypt
 
 
-class MqttClientSub(object):
-    def __init__(self, listener=False):
-
-        self.sub_from_com_service = os.environ.get("COM_SERVICE_RAW_DATA_TO_EVENT_HANDLER")
-        self.pub_to_com_service = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
-        self.eh_user = os.environ.get("EH_MQTT_USER")
-        self.eh_pwd = os.environ.get("EH_MQTT_PASSWORD")
-        self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
+class MqttClientPub(object):
+    def __init__(self, listener=False, data={}):
+        self.data = data
+        self.pub_to_com_service = app.config["LOCAL_API_TO_COM_SERVICE"]
+        self.api_user = app.config["API_MQTT_USER"]
+        self.api_pwd = app.config["API_MQTT_PASSWORD"]
+        self.en_de_key = app.config["CRYPTOGRAPHY_KEY"]
 
         self.connect = False
         self.listener = listener
@@ -66,36 +63,10 @@ class MqttClientSub(object):
     def __on_connect(self, client, userdata, flags, rc):
         self.connect = True
 
-        if self.listener:
-            self.mqttc.subscribe(self.sub_from_com_service)
-            self.mqttc.message_callback_add(self.sub_from_com_service, self.on_message_from_com_service)
+        # if self.listener:
+        #     self.mqttc.subscribe(self.sub_from_com_service)
+        #     self.mqttc.message_callback_add(self.sub_from_com_service, self.on_message_from_com_service)
         self.logger.debug("\n{0}\n".format(rc))
-
-    def on_message_from_com_service(self, client, userdata, msg):
-        """ event handling messages from controllers """
-        self.logger.info("\n[*] [<--] [EH][CS] New data from Communication Service.\n")
-        try:
-            decrypt_msg = json.loads(EnDeCrypt(self.en_de_key, msg.payload).DeCrypt())
-        except Exception as e:
-            self.logger.critical("\n[!] [EN_DE_CRYPTER] Fail to decrypt data from Communication Service!\nerr: {}\n".format(e))
-
-        try:
-            self.logger.info("\n[*] [++] [EH] create new instruction with new data.\n")
-            instruction = InstructionGenerator(data=decrypt_msg, token=decrypt_msg["token"]).create_instruction()
-        except Exception as e:
-            self.logger.critical("\n[!] [INSTRUCTION GENERATOR] Fail to create new instruction!s\nerr: {}\n".format(e))
-
-        try:
-            instruction = json.dumps(instruction)
-            encrypt_msg = EnDeCrypt(self.en_de_key, instruction).enCrypt()
-        except Exception as e:
-            self.logger.critical("\n[!] [EN_DE_CRYPTER] Fail to encrypt new instruction data!\nerr: {}\n".format(e))
-
-        try:
-            self.logger.info("\n[*] [-->] [EH][CS] New instruction sended to Communication Service.\n")
-            self._mqttPubMsg(self.pub_to_com_service, encrypt_msg)
-        except Exception as e:
-            self.logger.critical("\n[!] [EH][CS] Fail to send new instruction to Communication Service!\nerr: {}\n".format(e))
 
     def on_message(self, client, userdata, msg):
         self.logger.info("\n{0}, {1} - {2}\n".format(userdata, msg.topic, msg.payload))
@@ -104,7 +75,7 @@ class MqttClientSub(object):
         self.logger.debug("\n{0}, {1}, {2}, {3}\n".format(client, userdata, level, buf))
 
     def _broker_auth(self):
-        self.mqttc.username_pw_set(username=self.eh_user, password=self.eh_pwd)
+        self.mqttc.username_pw_set(username=self.api_user, password=self.api_pwd)
 
     def bootstrap_mqtt(self):
         self.mqttc = paho.Client()
@@ -119,24 +90,24 @@ class MqttClientSub(object):
         return self
 
     def start(self):
-        self.logger.info("{0}".format("\n[*] [EH] [*]  Query listener is Up!\n"))
         self.mqttc.loop_start()
-
-        while True:
-            sleep(2)
-            if self.connect is True:
-                pass
-            else:
-                self.logger.debug("\n[!] [EH] [!] Attempting to connect!\n")
-
-    def _mqttPubMsg(self, topic, data):
         while True:
             sleep(2)
             if self.connect is True:
                 try:
-                    self.mqttc.publish(topic, data, qos=1)
+                    data = json.dumps(self.data)
+                    encrypt_data = EnDeCrypt(self.en_de_key, data).enCrypt()
+                except Exception as e:
+                    self.logger.critical("\n[!] [EN_DE_CRYPTER] Fail to encrypt new instruction data!\nerr: {}\n".format(e))
+                    raise e
+
+                try:
+                    self.mqttc.publish(self.pub_to_com_service, encrypt_data, qos=1)
+                    self.mqttc.loop_stop()
+                    self.logger.info("\n[*] [-->] [API][CS] New Rule sended to Communication Service.\n")
                     break
                 except Exception as e:
+                    self.logger.critical("\n[!] [--] [API][CS] Fail to send new Rule to Communication Service!\nerr: {}\n".format(e))
                     raise e
             else:
                 self.logger.debug("\n[!] [EH] [!] Attempting to connect!\n")

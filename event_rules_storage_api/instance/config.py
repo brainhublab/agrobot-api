@@ -12,9 +12,20 @@ POSTGRES_USER = os.environ.get("POSTGRES_USER")
 POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
 
+
+BROKER_HOST = os.environ.get("BROKER_HOST")
+BROKER_PORT = os.environ.get("BROKER_PORT")
+
+LOCAL_API_TO_COM_SERVICE = os.environ.get("LOCAL_API_TO_COM_SERVICE")
+CRYPTOGRAPHY_KEY = os.environ.get("CRYPTOGRAPHY_KEY")
+
+API_MQTT_USER = os.environ.get("API_MQTT_USER")
+API_MQTT_PASSWORD = os.environ.get("API_MQTT_PASSWORD")
+
+TOKEN = os.environ.get("TOKEN")
 # SQLALCHEMY_DATABASE_URI = "postgresql://testadmin:testtest@db/testdb"
 
-TOKEN = "fe742bcb7bfa0c3ff680be5f84118321c2d2088b"
+# TOKEN = "fe742bcb7bfa0c3ff680be5f84118321c2d2088b"
 SQLALCHEMY_DATABASE_URI = "postgresql://{}:{}@{}/{}".format(POSTGRES_USER,
                                                             POSTGRES_PASSWORD,
                                                             POSTGRES_HOST,

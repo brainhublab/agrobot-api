@@ -5,8 +5,9 @@ from ... import db
 from ...models.rules import Rule
 from ...models.controllers import Controller
 from ..utils import parser, is_there_an_object, auth_check
-
 from flask_restful import Resource
+
+from ..mqtt_client.mqtt_client_publisher import MqttClientPub
 
 
 # Parse arguments from requests
@@ -57,9 +58,17 @@ class Rules(Resource):
                 controller_id=args["controller_id"],
                 rule_shema=args["rule_shema"]
             )
-
             db.session.add(new_rule)
             db.session.commit()
+            sensor_ping_message = {}
+            sensor_ping_message["msg_type"] = "ping"
+            sensor_ping_message["controller_id"] = args["controller_id"]
+            sensor_ping_message["sensor_id"] = args["rule_shema"]["sensor_id"]
+
+            try:
+                MqttClientPub(data=sensor_ping_message).bootstrap_mqtt().start()
+            except Exception as e:
+                print(e)
             return new_rule.toDict(), 201
         else:
             return {

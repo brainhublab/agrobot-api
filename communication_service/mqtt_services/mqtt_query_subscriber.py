@@ -7,13 +7,13 @@ import logging
 sys.path.insert(0, os.path.abspath('..'))
 from http_requests.requestss import LocalServerRequests
 from en_de_crypter.en_de_crypter import EnDeCrypt
-# logging.basicConfig(level=logging.INFO)
 
 
 class MqttClientSub(object):
     def __init__(self, listener=False):
         self.sub_from_ctrl_topic = os.environ.get("CONTROLLER_RAW_DATA_TO_COM_SERVICE")
         self.sub_from_event_handler_topic = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
+        self.sub_from_api = os.environ.get("LOCAL_API_TO_COM_SERVICE")
         self.pub_to_event_handler_topic = os.environ.get("COM_SERVICE_RAW_DATA_TO_EVENT_HANDLER")
         self.pub_to_ctrl_topic = os.environ.get("COM_SERVICE_INSTRUCTIONS_TO_CONTROLLER")
         self.eh_user = os.environ.get("COM_MQTT_USER")
@@ -28,7 +28,6 @@ class MqttClientSub(object):
         self.broker_url = os.environ.get("BROKER_HOST")
         self.broker_port = int(os.environ.get("BROKER_PORT"))
         self.logger = self.__reg_logger()
-        # self.logger = logging.getLogger(repr(self))
 
     def __reg_logger(self):
         # create logger
@@ -39,16 +38,19 @@ class MqttClientSub(object):
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
 
+        # create handler to write error logs in file
         error_handler = logging.FileHandler('./logs/error_file.log')
         error_handler.setLevel(logging.ERROR)
 
+        # create  handler to write warning logs in file
         warning_handler = logging.FileHandler('./logs/warning_file.log')
         warning_handler.setLevel(logging.WARNING)
 
+        # create  handler to write critical logs in file
         critical_handler = logging.FileHandler('./logs/critical_file.log')
         critical_handler.setLevel(logging.CRITICAL)
 
-        # create formatter
+        # create formatter for logger output
         formatter = logging.Formatter('\n[%(levelname)s] - %(asctime)s - %(name)s - %(message)s')
 
         # add formatter to handlers
@@ -71,8 +73,11 @@ class MqttClientSub(object):
         if self.listener:
             self.mqttc.subscribe(self.sub_from_ctrl_topic)
             self.mqttc.subscribe(self.sub_from_event_handler_topic)
+            self.mqttc.subscribe(self.sub_from_api)
+
             self.mqttc.message_callback_add(self.sub_from_ctrl_topic, self.on_message_from_controller)
             self.mqttc.message_callback_add(self.sub_from_event_handler_topic, self.on_message_from_handler)
+            self.mqttc.message_callback_add(self.sub_from_api, self.on_message_from_api)
         self.logger.debug("\n{0}\n".format(rc))
 
     def on_message_from_controller(self, client, userdata, msg):
@@ -102,6 +107,15 @@ class MqttClientSub(object):
             self.logger.info("\n[*] [-->] [CS][CO] New instruction sended to Controller\n")
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [CS][CO] Fail send data to Controller.\nerr: {}\n".format(e))
+
+    def on_message_from_api(self, client, userdata, msg):
+        """ Resent ping message for new rule from API to controller """
+        try:
+            self.logger.info("\n[*] [<--] [CS][API] New message come from API\n")
+            self._mqttPubMsg(self.pub_to_ctrl_topic, msg.payload)
+            self.logger.info("\n[*] [-->] [CS][CO] New message sended to Controller\n")
+        except Exception as e:
+            self.logger.critical("\n[!][!] [--] [CS][CO] Fail send message to Controller.\nerr: {}\n".format(e))
 
     def on_message(self, client, userdata, msg):
         self.logger.info("\n{0}, {1} - {2}\n".format(userdata, msg.topic, msg.payload))

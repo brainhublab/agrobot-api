@@ -3,4 +3,9 @@ __pycache__
 .env
 .env-communication-service
 mosquitto/config/access_control_list.acl
+test_scripts
+env-raspberry
+env-local
+env-communication-service-local
+env-communication-service-raspberry
 
