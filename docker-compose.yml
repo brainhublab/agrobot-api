@@ -114,3 +114,22 @@ services:
       # networks:
       #     - local_auto_tier
 
+    controller_bot:
+      image: controller_bot:latest
+      build:
+          context: ./controller_bot/
+          dockerfile: Dockerfile
+      restart: always
+      container_name: controller_bot
+      expose:
+        - "8082"
+      ports:
+        - "8082:8082"
+      env_file:
+        - '.env-communication-service'
+      depends_on:
+          - mosquitto
+      network_mode: host
+      # networks:
+      #     - local_auto_tier
+

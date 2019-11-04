@@ -60,7 +60,7 @@ class Rules(Resource):
             db.session.add(new_rule)
             db.session.commit()
             sensor_ping_message = {}
-            sensor_ping_message["msg_type"] = "ping"
+            sensor_ping_message["msg_type"] = "rule_ping"
             sensor_ping_message["controller_mac"] = args["controller_mac"]
             sensor_ping_message["sensor_id"] = args["rule_shema"]["sensor_id"]
 

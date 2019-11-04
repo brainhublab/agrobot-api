@@ -12,10 +12,11 @@ class InstructionGenerator(object):
     def create_instruction(self):
         engine_request = EngineRequests(self.token, self.data)
         try:
+            self.data["msg_type"] = "new_rule"
             self.data["rules"] = engine_request.get_rules_local_server()
             self.data["controllers"] = engine_request.controllers_config()
             self.data["value"] += 1
         except Exception as e:
             raise e
-        return {"[!!!]INSTRUCTION": self.data}
+        return self.data
 
