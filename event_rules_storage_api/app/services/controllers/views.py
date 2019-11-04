@@ -10,21 +10,43 @@ from flask_restful import Resource
 # Parse arguments from requests
 # official documentation: https://flask-restful.readthedocs.io/en/0.3.5/reqparse.html
 
-parser_post_put = parser.copy()
-parser_post_put.add_argument("name",
-                             required=True,
-                             location="json",
-                             type=str,
-                             help="Name field cannot be blank ")
-parser_post_put.add_argument("description",
-                             required=True,
-                             location="json",
-                             type=str,
-                             help="Description field cannot be blank ")
-parser_post_put.add_argument("pins_configuration", required=True,
-                             location="json",
-                             type=dict,
-                             help="pins_configuration dict is required!")
+parser_post = parser.copy()
+parser_post.add_argument("name",
+                         required=True,
+                         location="json",
+                         type=str,
+                         help="Name field cannot be blank ")
+parser_post.add_argument("mac_addr",
+                         required=True,
+                         location="json",
+                         type=str,
+                         help="MAC address field cannot be blank ")
+parser_post.add_argument("description",
+                         required=True,
+                         location="json",
+                         type=str,
+                         help="Description field cannot be blank ")
+parser_post.add_argument("pins_configuration", required=True,
+                         location="json",
+                         type=dict,
+                         help="pins_configuration dict is required!")
+
+
+parser_put = parser.copy()
+parser_put.add_argument("name",
+                        required=True,
+                        location="json",
+                        type=str,
+                        help="Name field cannot be blank ")
+parser_put.add_argument("description",
+                        required=True,
+                        location="json",
+                        type=str,
+                        help="Description field cannot be blank ")
+parser_put.add_argument("pins_configuration", required=True,
+                        location="json",
+                        type=dict,
+                        help="pins_configuration dict is required!")
 
 
 class Controllers(Resource):
@@ -43,10 +65,16 @@ class Controllers(Resource):
     # Delete request
     @auth_check
     def post(self):
-        args = parser_post_put.parse_args()
+        args = parser_post.parse_args()
+        exist_controller = Controller.query.filter_by(mac_addr=args["mac_addr"]).first()
+        if exist_controller is not None:
+            return {
+                "message": "Controller already exist!"
+            }, 409
 
         new_controller = Controller(
             name=args["name"],
+            mac_addr=args["mac_addr"],
             description=args["description"],
             pins_configuration=args["pins_configuration"]
         )
@@ -80,7 +108,7 @@ class CControllers(Resource):
 
     @auth_check
     def put(self, id):
-        args = parser_post_put.parse_args()
+        args = parser_put.parse_args()
         controller_to_update = Controller.query.filter_by(id=id).first()
         if is_there_an_object(controller_to_update):
 

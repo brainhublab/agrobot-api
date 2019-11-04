@@ -13,17 +13,16 @@ from ..mqtt_client.mqtt_client_publisher import MqttClientPub
 # Parse arguments from requests
 # official documentation: https://flask-restful.readthedocs.io/en/0.3.5/reqparse.html
 parser_get = parser.copy()
-parser_get.add_argument("controller_id",
+parser_get.add_argument("controller_mac",
                         required=False,
-                        type=int,
                         location="args",
                         help="Unknowed argument!")
 
 parser_post = parser.copy()
-parser_post.add_argument("controller_id", required=True,
+parser_post.add_argument("controller_mac", required=True,
                          location="json",
-                         type=int,
-                         help="Controller ID cannot be blank ")
+                         help="Controller MAC address cannot be blank ")
+
 parser_post.add_argument("rule_shema", required=True,
                          location="json",
                          type=dict,
@@ -41,8 +40,8 @@ class Rules(Resource):
     @auth_check
     def get(self):
         args = parser_get.parse_args()
-        if args["controller_id"] is not None:
-            controller_rules = Rule.query.filter_by(controller_id=args["controller_id"]).order_by("updated_on")
+        if args["controller_mac"] is not None:
+            controller_rules = Rule.query.filter_by(controller_mac=args["controller_mac"]).order_by("updated_on")
             return [x.toDict() for x in controller_rules], 200
         else:
             all_rules = Rule.query.order_by("updated_on")
@@ -52,17 +51,17 @@ class Rules(Resource):
     @auth_check
     def post(self):
         args = parser_post.parse_args()
-        fk_controller = Controller.query.filter_by(id=args["controller_id"]).first()
+        fk_controller = Controller.query.filter_by(mac_addr=args["controller_mac"]).first()
         if is_there_an_object(fk_controller):
             new_rule = Rule(
-                controller_id=args["controller_id"],
+                controller_mac=args["controller_mac"],
                 rule_shema=args["rule_shema"]
             )
             db.session.add(new_rule)
             db.session.commit()
             sensor_ping_message = {}
             sensor_ping_message["msg_type"] = "ping"
-            sensor_ping_message["controller_id"] = args["controller_id"]
+            sensor_ping_message["controller_mac"] = args["controller_mac"]
             sensor_ping_message["sensor_id"] = args["rule_shema"]["sensor_id"]
 
             try:

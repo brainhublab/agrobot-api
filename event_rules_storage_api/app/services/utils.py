@@ -17,7 +17,7 @@ def auth_check(funk):
         except Exception as e:
             return {"message": e}, 401
         if env_token != token:
-            return None
+            return None, 403
             # return {"message": "Bad Token provided!"}, 403
         return funk(*args, **kwargs)
     return duth_dec
