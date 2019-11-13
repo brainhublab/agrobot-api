@@ -16,7 +16,8 @@ POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
 BROKER_HOST = os.environ.get("BROKER_HOST")
 BROKER_PORT = os.environ.get("BROKER_PORT")
 
-LOCAL_API_TO_COM_SERVICE = os.environ.get("LOCAL_API_TO_COM_SERVICE")
+API_NEW_RULE = os.environ.get("API_NEW_RULE")
+API_CONFIG_UPDATE = os.environ.get("API_CONFIG_UPDATE")
 CRYPTOGRAPHY_KEY = os.environ.get("CRYPTOGRAPHY_KEY")
 
 API_MQTT_USER = os.environ.get("API_MQTT_USER")

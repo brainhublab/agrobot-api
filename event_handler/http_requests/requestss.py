@@ -47,7 +47,7 @@ class EngineRequests(object):
             response_data = None
             return response_data
 
-    def controllers_config(self, obj_id=None,):
+    def controllers_config(self, obj_id=None):
         url = self.local_controller_config_url
         try:
             headers = self._create_request_header()

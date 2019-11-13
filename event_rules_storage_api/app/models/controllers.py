@@ -12,6 +12,7 @@ class Controller(db.Model):
     name = db.Column(db.String(100))
     description = db.Column(db.Text())
     pins_configuration = db.Column(db.JSON)
+    subscribers = db.Column(db.ARRAY(db.Text()))
 
     created_on = db.Column(db.DateTime, default=func.now())
     updated_on = db.Column(db.DateTime, onupdate=datetime.datetime.now)

@@ -22,9 +22,9 @@ services:
         depends_on:
             - db
             - mosquitto
-        # network_mode: host
-        networks:
-            - local_auto_tier
+        network_mode: host
+        # networks:
+        #     - local_auto_tier
 
     db:
       image: postgres
@@ -39,9 +39,9 @@ services:
         - "5432"
       ports:
         - "5432:5432"
-      # network_mode: host
-      networks:
-          - local_auto_tier
+      network_mode: host
+      # networks:
+      #     - local_auto_tier
 
     # # Mosquitto broker for mqtt protocol connection
     # mosquitto:

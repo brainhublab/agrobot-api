@@ -99,7 +99,7 @@ class CRule(Resource):
         if is_there_an_object(rule_to_update):
             rule_to_update.rule_shema = args["rule_shema"],
             db.session.commit()
-            return rule_to_update.toDict(), 201
+            return rule_to_update.toDict(), 200
         else:
             return {
                 "message": "Obj not found!"
