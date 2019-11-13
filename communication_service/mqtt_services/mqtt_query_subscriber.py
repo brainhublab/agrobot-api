@@ -31,6 +31,7 @@ class MqttClientSub(object):
         self.eh_user = os.environ.get("COM_MQTT_USER")
         self.eh_pwd = os.environ.get("COM_MQTT_PASSWORD")
         self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
+        self.ctrl_clients_refs = []
 
         self.connect = False
         self.listener = listener
@@ -90,9 +91,31 @@ class MqttClientSub(object):
                                             self.on_message_from_new_controller_receave)
             self.mqttc.message_callback_add(self.sub_from_event_handler_topic,
                                             self.on_message_from_handler)
-            # av_controllers = LocalServerRequests().get_all_registered_controllers()
-            # print(av_controllers)
-            # print(type(av_controllers))
+            av_controllers = LocalServerRequests().get_all_registered_controllers()
+            for controller_data in av_controllers:
+                client_id = controller_data["mac_addr"]
+                ctrl_client = self.__bootstrap_mqtt_controller_client(client_id)
+                self.ctrl_clients_refs.append(ctrl_client)
+                if "sensors" in controller_data["pins_configuration"]:
+                    sensors = controller_data["pins_configuration"]["sensors"]
+                    try:
+                        """ Connected new config subscribers """
+                        for sensor in sensors:
+                            log_sub = self.controller_logs_receave + "/" + client_id + "/" + sensor["id"]
+                            data_sub = self.controller_data_receave + "/" + client_id + "/" + sensor["id"]
+
+                            ctrl_client.subscribe(data_sub)
+                            ctrl_client.subscribe(log_sub)
+
+                            ctrl_client.message_callback_add(data_sub,
+                                                             self.on_message_from_controller_data_receave)
+                            ctrl_client.message_callback_add(log_sub,
+                                                             self.on_message_from_controller_logs_receave)
+                    except Exception as e:
+                        self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
+                                             Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
+                        self.logger.info("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
+                                         Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
         self.logger.debug("\n{0}\n".format(rc))
 
     def __on_connect_controller_client(self, client, userdata, flags, rc):
@@ -139,7 +162,9 @@ class MqttClientSub(object):
                              Fail create new controller on API.\nerr: {}\n".format(e))
 
         if new_controller.status_code == 201:
-            self.__bootstrap_mqtt_controller_client(macAddr)
+            new_ctrl_client = self.__bootstrap_mqtt_controller_client(macAddr)
+            self.ctrl_clients_refs.append(new_ctrl_client)
+
         else:
             self.logger.warning("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
                                 Fail to create new client for controller.\nstatus: {}\n".format(new_controller.status_code))
@@ -213,7 +238,10 @@ class MqttClientSub(object):
         # TODO: check what kind of message will come
 
     def on_message_from_controller_data_receave(self, client, userdata, msg):
-        print("ON_MESSAGE_FROM_CONTROLLER_DATA_RECEAVE")
+        print("Dataaaaaaaaaaaaa NEW")
+        for client in self.ctrl_clients_refs:
+            print(client._client_id.decode())
+        # print(self.controllers_clients_refs)
 
     def on_message_from_controller_logs_receave(self, client, userdata, msg):
         print("New LOGGGGGGGGGGGGGGGGGGGGGG")
@@ -251,6 +279,7 @@ class MqttClientSub(object):
 
         if result_of_connection == 0:
             mqtt_controller_cli.loop_start()
+        return mqtt_controller_cli
 
     def bootstrap_mqtt(self):
         self.mqttc = paho.Client("CommunicatonServiceClient")

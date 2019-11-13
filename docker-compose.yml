@@ -21,7 +21,6 @@ services:
           - '.env'
         depends_on:
             - db
-            - mosquitto
         network_mode: host
         # networks:
         #     - local_auto_tier
@@ -90,7 +89,9 @@ services:
       env_file:
         - '.env-communication-service'
       depends_on:
+          - event_rules_storage_api
           - mosquitto
+          - db
       network_mode: host
       # networks:
       #     - local_auto_tier
