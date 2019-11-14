@@ -3,7 +3,7 @@ ENV PYTHONUNBUFFERED 1
 
 RUN mkdir /usr/src/event_rules_storage_api
 
-COPY . /usr/src/event_rules_storage_api
+COPY requirements.txt /usr/src/event_rules_storage_api
 
 WORKDIR /usr/src/event_rules_storage_api/
 
@@ -29,6 +29,8 @@ ENV LC_ALL=C.UTF-8
 RUN export LANG=C.UTF-8
 ENV FLASK_CONFIG=development
 ENV FLASK_APP=run.py
+
+COPY . /usr/src/event_rules_storage_api
 
 RUN chmod +x ./run.sh && echo "$LC_ALL" && echo "$LANG" && echo "$FLASK_CONFIG" && echo "$FLASK_APP"
 

@@ -3,7 +3,7 @@ ENV PYTHONUNBUFFERED 1
 
 RUN mkdir /usr/src/event_handler
 
-COPY . /usr/src/event_handler
+COPY requirements.txt /usr/src/event_handler
 
 WORKDIR /usr/src/event_handler/
 
@@ -24,6 +24,8 @@ RUN apk add --no-cache --virtual .build-deps \
     )" \
     && apk add --virtual .rundeps $runDeps \
     && apk del .build-deps
+
+COPY . /usr/src/event_handler
 
 RUN chmod +x ./run.sh
 

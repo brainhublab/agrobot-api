@@ -1,4 +1,5 @@
 import paho.mqtt.client as paho
+import signal
 import os
 from time import sleep
 import json
@@ -31,14 +32,16 @@ class MqttClientSub(object):
         self.eh_user = os.environ.get("COM_MQTT_USER")
         self.eh_pwd = os.environ.get("COM_MQTT_PASSWORD")
         self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
-        self.ctrl_clients_refs = []
-
-        self.connect = False
-        self.listener = listener
         self.auth_token = os.environ.get("TOKEN")
 
         self.broker_url = os.environ.get("BROKER_HOST")
         self.broker_port = int(os.environ.get("BROKER_PORT"))
+
+        self.kill = False
+        self.ctrl_clients_refs = []
+
+        self.connect = False
+        self.listener = listener
         self.logger = self.__reg_logger()
 
     def __reg_logger(self):
@@ -95,7 +98,6 @@ class MqttClientSub(object):
             for controller_data in av_controllers:
                 client_id = controller_data["mac_addr"]
                 ctrl_client = self.__bootstrap_mqtt_controller_client(client_id)
-                self.ctrl_clients_refs.append(ctrl_client)
                 if "sensors" in controller_data["pins_configuration"]:
                     sensors = controller_data["pins_configuration"]["sensors"]
                     try:
@@ -162,14 +164,12 @@ class MqttClientSub(object):
                              Fail create new controller on API.\nerr: {}\n".format(e))
 
         if new_controller.status_code == 201:
-            new_ctrl_client = self.__bootstrap_mqtt_controller_client(macAddr)
-            self.ctrl_clients_refs.append(new_ctrl_client)
-
+            self.__bootstrap_mqtt_controller_client(macAddr)
         else:
             self.logger.warning("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
-                                Fail to create new client for controller.\nstatus: {}\n".format(new_controller.status_code))
+                                Fail to create new client for controller.\nAPI status: {}\n".format(new_controller.status_code))
             self.logger.info("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
-                             Fail to create new client for controller.\nstatus: {}\n".format(new_controller.status_code))
+                             Fail to create new client for controller.\n API status: {}\n".format(new_controller.status_code))
 
     def on_message_from_api_config_upgrade(self, client, userdata, msg):
         client_id = client._client_id.decode()
@@ -241,10 +241,9 @@ class MqttClientSub(object):
         print("Dataaaaaaaaaaaaa NEW")
         for client in self.ctrl_clients_refs:
             print(client._client_id.decode())
-        # print(self.controllers_clients_refs)
 
     def on_message_from_controller_logs_receave(self, client, userdata, msg):
-        print("New LOGGGGGGGGGGGGGGGGGGGGGG")
+        print("New LOGGGGGGGGGGGGGGGGGGGGGGgG")
 
     # EVENT HANDLER CONNECTION CALLBACKS
     def on_message_from_handler(self, client, userdata, msg):
@@ -277,6 +276,7 @@ class MqttClientSub(object):
         mqtt_controller_cli.on_log = self.__on_log
         result_of_connection = mqtt_controller_cli.connect(self.broker_url, self.broker_port, keepalive=120)
 
+        self.ctrl_clients_refs.append(mqtt_controller_cli)
         if result_of_connection == 0:
             mqtt_controller_cli.loop_start()
         return mqtt_controller_cli
@@ -294,16 +294,19 @@ class MqttClientSub(object):
 
         return self
 
+    def sepuko(self, signum, frame):
+        self.kill = True
+
     def start(self):
         self.logger.info("{0}".format("\n[*] [CS] [*] Query listeners are Up!\n"))
-        self.mqttc.loop_start()
+        signal.signal(signal.SIGINT, self.sepuko)
+        signal.signal(signal.SIGTERM, self.sepuko)
 
-        while True:
-            sleep(2)
-            if self.connect is True:
-                pass
-            else:
-                self.logger.debug("\n[!] [CS] [!] Attempting to connect!\n")
+        while not self.kill:
+            self.mqttc.loop()
+        else:
+            for client in self.ctrl_clients_refs:
+                client.loop_stop()
 
     def _mqttPubMsg(self, topic, data):
         while True:

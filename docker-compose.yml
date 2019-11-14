@@ -19,6 +19,8 @@ services:
             - 5000:5000
         env_file:
           - '.env'
+        volumes:
+          - ./event_rules_storage_api:/usr/src/event_rules_storage_api
         depends_on:
             - db
         network_mode: host
@@ -71,6 +73,8 @@ services:
         - "9001:9001"
       env_file:
         - '.env-communication-service'
+      depends_on:
+        - event_rules_storage_api
       network_mode: host
       # networks:
       #   - local_auto_tier
@@ -88,10 +92,10 @@ services:
         - "8080:8080"
       env_file:
         - '.env-communication-service'
+      volumes:
+        - ./communication_service:/usr/src/communication_service
       depends_on:
-          - event_rules_storage_api
-          - mosquitto
-          - db
+        - mosquitto
       network_mode: host
       # networks:
       #     - local_auto_tier
@@ -109,8 +113,10 @@ services:
         - "8081:8081"
       env_file:
         - '.env-communication-service'
+      volumes:
+        - ./event_handler:/usr/src/event_handler
       depends_on:
-          - mosquitto
+        - communication_service
       network_mode: host
       # networks:
       #     - local_auto_tier

@@ -3,7 +3,7 @@ ENV PYTHONUNBUFFERED 1
 
 RUN mkdir /usr/src/communication_service
 
-COPY . /usr/src/communication_service
+COPY requirements.txt /usr/src/communication_service
 
 WORKDIR /usr/src/communication_service/
 
@@ -25,7 +25,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk add --virtual .rundeps $runDeps \
     && apk del .build-deps
 
-RUN chmod +x ./run.sh
+COPY . /usr/src/communication_service
 
-CMD ./run.sh
+CMD python3 auto_reload.py python3 main.py
 
