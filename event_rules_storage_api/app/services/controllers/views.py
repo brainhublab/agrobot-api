@@ -85,13 +85,11 @@ class Controllers(Resource):
     # SQLAlchemy documentation queryng:
     # https://docs.sqlalchemy.org/en/latest/orm/query.html
 
-    # Put request
     @auth_check
     def get(self):
         all_controllers = Controller.query.order_by("updated_on")
         return [x.toDict() for x in all_controllers], 200
 
-    # Delete request
     @auth_check
     def post(self):
         args = parser_post.parse_args()

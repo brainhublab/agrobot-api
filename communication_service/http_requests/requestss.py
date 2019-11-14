@@ -17,31 +17,15 @@ class GlobalServerRequests(object):
         return self.sensors_url + str(self.data["sensor_id"]) + "/"
 
     def post_sensor_raw_data(self):
+        sensor_url = self._create_sensor_url()
         data = {}
+        data["sensor"] = sensor_url
+        data["title"] = self.data["title"]
+        data["value"] = self.data["value"]
 
-        try:
-            sensor_url = self._create_sensor_url()
-        except Exception as e:
-            raise e
-
-        try:
-            data["sensor"] = sensor_url
-            data["title"] = self.data["title"]
-            data["value"] = self.data["value"]
-        except Exception as e:
-            raise e
-
-        try:
-            headers = self._create_request_header()
-        except Exception as e:
-            raise e
-
-        # self.raw_data_url must be route for raw data
+        headers = self._create_request_header()
         url = self.raw_data_url
-        try:
-            new_data_posted = requests.post(url, headers=headers, data=data)
-        except Exception as e:
-            raise e
+        new_data_posted = requests.post(url, headers=headers, data=data)
         return new_data_posted.status_code
 
 
@@ -68,46 +52,20 @@ class LocalServerRequests(object):
     """                             REQUESTS                                 """
 
     def get_all_registered_controllers(self):
-        try:
-            headers = self._create_request_header()
-        except Exception as e:
-            raise e
-
+        headers = self._create_request_header()
         url = self.api_controllers_url
-        try:
-            response = requests.get(url, headers=headers)
-            return json.loads(response.content)
-        except Exception as e:
-            raise e
-
+        response = requests.get(url, headers=headers)
+        return response
 
     def post_new_controller(self):
-        try:
-            headers = self._create_request_header()
-        except Exception as e:
-            raise e
-
+        headers = self._create_request_header()
         url = self.api_controllers_url
-        try:
-            response = requests.post(url, headers=headers, json=self.data)
-            return response
-        except Exception as e:
-            raise e
+        response = requests.post(url, headers=headers, json=self.data)
+        return response
 
     def put_subscribers_by_mac(self):
-        try:
-            headers = self._create_request_header()
-        except Exception as e:
-            raise e
-
-        try:
-            url = self._add_mac_addr_to_url(self.api_controllers_subscribers_url)
-        except Exception as e:
-            raise e
-
-        try:
-            response = requests.put(url, headers=headers, json=self.data)
-            return response
-        except Exception as e:
-            raise e
+        headers = self._create_request_header()
+        url = self._add_mac_addr_to_url(self.api_controllers_subscribers_url)
+        response = requests.put(url, headers=headers, json=self.data)
+        return response
 

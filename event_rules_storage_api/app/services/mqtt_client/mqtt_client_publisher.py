@@ -27,32 +27,19 @@ class MqttClientPub(object):
         ch.setLevel(logging.DEBUG)
 
         # create handler to write error logs in file
-        error_handler = logging.FileHandler('./logs/error_file.log')
-        error_handler.setLevel(logging.ERROR)
-
-        # create  handler to write warning logs in file
-        warning_handler = logging.FileHandler('./logs/warning_file.log')
-        warning_handler.setLevel(logging.WARNING)
-
-        # create  handler to write critical logs in file
-        critical_handler = logging.FileHandler('./logs/critical_file.log')
-        critical_handler.setLevel(logging.CRITICAL)
+        log_reg = logging.FileHandler('./logs/api_mqtt_client_service.log')
+        log_reg.setLevel(logging.DEBUG)
 
         # create formatter for logger output
         formatter = logging.Formatter('\n[%(levelname)s] - %(asctime)s - %(name)s - %(message)s')
 
         # add formatter to handlers
         ch.setFormatter(formatter)
-        error_handler.setFormatter(formatter)
-        warning_handler.setFormatter(formatter)
-        critical_handler.setFormatter(formatter)
+        log_reg.setFormatter(formatter)
 
         # add handlers to logger
         logger.addHandler(ch)
-        logger.addHandler(error_handler)
-        logger.addHandler(warning_handler)
-        logger.addHandler(critical_handler)
-
+        logger.addHandler(log_reg)
         return logger
 
     def __on_connect(self, client, userdata, flags, rc):

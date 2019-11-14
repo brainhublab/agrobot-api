@@ -1,5 +1,6 @@
 __pycache__
 *.pyc
+*.log
 .env
 .env-communication-service
 mosquitto/config/access_control_list.acl

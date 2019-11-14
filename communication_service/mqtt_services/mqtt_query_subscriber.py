@@ -7,7 +7,6 @@ import sys
 import logging
 sys.path.insert(0, os.path.abspath('..'))
 from http_requests.requestss import LocalServerRequests
-from en_de_crypter.en_de_crypter import EnDeCrypt
 
 
 class MqttClientSub(object):
@@ -31,8 +30,6 @@ class MqttClientSub(object):
 
         self.eh_user = os.environ.get("COM_MQTT_USER")
         self.eh_pwd = os.environ.get("COM_MQTT_PASSWORD")
-        self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
-        self.auth_token = os.environ.get("TOKEN")
 
         self.broker_url = os.environ.get("BROKER_HOST")
         self.broker_port = int(os.environ.get("BROKER_PORT"))
@@ -54,36 +51,22 @@ class MqttClientSub(object):
         ch.setLevel(logging.DEBUG)
 
         # create handler to write error logs in file
-        error_handler = logging.FileHandler('./logs/error_file.log')
-        error_handler.setLevel(logging.ERROR)
-
-        # create  handler to write warning logs in file
-        warning_handler = logging.FileHandler('./logs/warning_file.log')
-        warning_handler.setLevel(logging.WARNING)
-
-        # create  handler to write critical logs in file
-        critical_handler = logging.FileHandler('./logs/critical_file.log')
-        critical_handler.setLevel(logging.CRITICAL)
+        log_reg = logging.FileHandler('./logs/communication_service.log')
+        log_reg.setLevel(logging.DEBUG)
 
         # create formatter for logger output
         formatter = logging.Formatter('\n[%(levelname)s] - %(asctime)s - %(name)s - %(message)s')
 
         # add formatter to handlers
         ch.setFormatter(formatter)
-        error_handler.setFormatter(formatter)
-        warning_handler.setFormatter(formatter)
-        critical_handler.setFormatter(formatter)
+        log_reg.setFormatter(formatter)
 
         # add handlers to logger
         logger.addHandler(ch)
-        logger.addHandler(error_handler)
-        logger.addHandler(warning_handler)
-        logger.addHandler(critical_handler)
-
+        logger.addHandler(log_reg)
         return logger
 
     """     SUBSCRIBERS / CALLBACKS CONNECTION REGISTRY (every reconnection)    """
-
     def __on_connect(self, client, userdata, flags, rc):
         self.connect = True
         if self.listener:
@@ -94,7 +77,20 @@ class MqttClientSub(object):
                                             self.on_message_from_new_controller_receave)
             self.mqttc.message_callback_add(self.sub_from_event_handler_topic,
                                             self.on_message_from_handler)
-            av_controllers = LocalServerRequests().get_all_registered_controllers()
+
+            while True:
+                try:
+                    av_controllers_responce = LocalServerRequests().get_all_registered_controllers()
+                except Exception as e:
+                    self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\nerr: {}\n".format(e))
+                    continue
+                if av_controllers_responce.status_code == 200:
+                    av_controllers = json.loads(av_controllers_responce.content)
+                    break
+                else:
+                    sleep(1)
+                    self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\n")
+
             for controller_data in av_controllers:
                 client_id = controller_data["mac_addr"]
                 ctrl_client = self.__bootstrap_mqtt_controller_client(client_id)
@@ -116,8 +112,6 @@ class MqttClientSub(object):
                     except Exception as e:
                         self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
                                              Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
-                        self.logger.info("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                                         Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
         self.logger.debug("\n{0}\n".format(rc))
 
     def __on_connect_controller_client(self, client, userdata, flags, rc):
@@ -148,7 +142,6 @@ class MqttClientSub(object):
             - activate basic subscribers
     """
     def on_message_from_new_controller_receave(self, client, userdata, msg):
-        print(dir(userdata))
         macAddr = msg.payload.decode()
         try:
             post_data = {}
@@ -160,16 +153,12 @@ class MqttClientSub(object):
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
                                  Fail create new controller on API.\nerr: {}\n".format(e))
-            self.logger.info("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
-                             Fail create new controller on API.\nerr: {}\n".format(e))
 
         if new_controller.status_code == 201:
             self.__bootstrap_mqtt_controller_client(macAddr)
         else:
             self.logger.warning("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
                                 Fail to create new client for controller.\nAPI status: {}\n".format(new_controller.status_code))
-            self.logger.info("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
-                             Fail to create new client for controller.\n API status: {}\n".format(new_controller.status_code))
 
     def on_message_from_api_config_upgrade(self, client, userdata, msg):
         client_id = client._client_id.decode()
@@ -201,8 +190,6 @@ class MqttClientSub(object):
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
                                  Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
-            self.logger.info("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                             Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
 
         """ record new subscribers in db """
         try:
@@ -211,8 +198,6 @@ class MqttClientSub(object):
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
                                  Fail put new subscribers to API.\nerr: {}\n".format(e))
-            self.logger.info("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                             Fail put new subscribers to API.\nerr: {}\n".format(e))
 
         if update_subscribers.status_code == 200:
             """ sent new configs to controller """
@@ -222,10 +207,6 @@ class MqttClientSub(object):
             except Exception as e:
                 self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
                                      Fail sent new config to Controller.\nerr: {}\n".format(e))
-                self.logger.info("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                                 Fail sent new config to Controller.\nerr: {}\n".format(e))
-        # client.disconnect()
-        # self.__bootstrap_mqtt_controller_client("MACcontrollerTest")
 
     def on_message_from_controller_configs_receave(self, client, userdata, msg):
         message = msg.payload.decode()
@@ -256,7 +237,6 @@ class MqttClientSub(object):
             self.logger.critical("\n[!][!] [--] [CS][CO] Fail send data to Controller.\nerr: {}\n".format(e))
 
     """                                UTILS                                 """
-
     def __on_log(self, client, userdata, level, buf):
         self.logger.info("\n[*][{0}] [{1}] [{2}]\n".format(client._client_id.decode(), level, buf))
 
@@ -267,7 +247,6 @@ class MqttClientSub(object):
         print("disconnect {} {}").format(client._client_id, userdata)
 
     """                            CLIENT CONFIGS                            """
-
     def __bootstrap_mqtt_controller_client(self, client_id):
         mqtt_controller_cli = paho.Client(client_id=client_id, clean_session=False)
         self._broker_auth(mqtt_controller_cli)
@@ -298,7 +277,7 @@ class MqttClientSub(object):
         self.kill = True
 
     def start(self):
-        self.logger.info("{0}".format("\n[*] [CS] [*] Query listeners are Up!\n"))
+        self.logger.info("{0}".format("\n[*] [Query listeners are Up!]\n"))
         signal.signal(signal.SIGINT, self.sepuko)
         signal.signal(signal.SIGTERM, self.sepuko)
 
@@ -318,5 +297,5 @@ class MqttClientSub(object):
                 except Exception as e:
                     raise e
             else:
-                self.logger.debug("\n[!] [EH] [!] Attempting to connect!\n")
+                self.logger.debug("\n[!] Attempting to connect!\n")
 

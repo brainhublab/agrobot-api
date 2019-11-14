@@ -44,19 +44,6 @@ services:
       # networks:
       #     - local_auto_tier
 
-    # # Mosquitto broker for mqtt protocol connection
-    # mosquitto:
-    #   image: eclipse-mosquitto
-    #   container_name: mosquitto
-    #   expose:
-    #     - "1883"
-    #     - "9001"
-    #   ports:
-    #     - "1883:1883"
-    #     - "9001:9001"
-    #   network_mode: host
-    #   # networks:
-    #   #   - local_auto_tier
 
   # Mosquitto broker for mqtt protocol connection
     mosquitto:
