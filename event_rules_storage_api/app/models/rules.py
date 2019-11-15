@@ -24,4 +24,3 @@ class Rule(db.Model):
         if data["updated_on"]:
             data["updated_on"] = data["updated_on"].strftime("%Y-%m-%d %H:%M")
         return data
-

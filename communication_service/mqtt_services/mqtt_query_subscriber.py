@@ -12,7 +12,8 @@ from http_requests.requestss import LocalServerRequests
 class MqttClientSub(object):
     def __init__(self, listener=False):
         """ take the basic topic names from envoirnment file"""
-        self.new_controller_receave = os.environ.get("CONTROLLER_RECEAVE_NEW_CONTROLLER")
+        self.communicaton_service_client_id = os.environ.get("COMMUNICATION_SERVICE_CLIENT_ID")
+        self.new_controller_receave = os.environ.get("RECEAVE_NEW_CONTROLLER")
 
         self.controller_configs_receave = os.environ.get("CONTROLLER_CONFIGS") + "/receave"
         self.controller_configs_sent = os.environ.get("CONTROLLER_CONFIGS") + "/sent"
@@ -25,8 +26,8 @@ class MqttClientSub(object):
 
         self.api_config_upgrade = os.environ.get("API_CONFIG_UPDATE")
 
-        self.sub_from_event_handler_topic = os.environ.get("EVENT_HANDLER_INSTRUCTION_TO_COM_SERVICE")
-        self.pub_to_event_handler_topic = os.environ.get("COM_SERVICE_RAW_DATA_TO_EVENT_HANDLER")
+        self.event_handler_data = os.environ.get("EVENT_HANDLER_DATA")
+        self.event_handler_rule = os.environ.get("EVENT_HANDLER_RULE")
 
         self.eh_user = os.environ.get("COM_MQTT_USER")
         self.eh_pwd = os.environ.get("COM_MQTT_PASSWORD")
@@ -71,19 +72,16 @@ class MqttClientSub(object):
         self.connect = True
         if self.listener:
             self.mqttc.subscribe(self.new_controller_receave)
-            self.mqttc.subscribe(self.sub_from_event_handler_topic)
 
             self.mqttc.message_callback_add(self.new_controller_receave,
                                             self.on_message_from_new_controller_receave)
-            self.mqttc.message_callback_add(self.sub_from_event_handler_topic,
-                                            self.on_message_from_handler)
-
             while True:
                 try:
                     av_controllers_responce = LocalServerRequests().get_all_registered_controllers()
                 except Exception as e:
                     self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\nerr: {}\n".format(e))
                     continue
+
                 if av_controllers_responce.status_code == 200:
                     av_controllers = json.loads(av_controllers_responce.content)
                     break
@@ -122,6 +120,7 @@ class MqttClientSub(object):
             client.subscribe(self.controller_configs_receave + "/" + client_id)
             client.subscribe(self.controller_rules_receave + "/" + client_id)
             client.subscribe(self.api_config_upgrade + "/" + client_id)
+            client.subscribe(self.event_handler_rule + "/" + client_id)
 
             client.message_callback_add(self.controller_configs_receave + "/" + client_id,
                                         self.on_message_from_controller_configs_receave)
@@ -129,19 +128,23 @@ class MqttClientSub(object):
                                         self.on_message_from_controller_rules_receave)
             client.message_callback_add(self.api_config_upgrade + "/" + client_id,
                                         self.on_message_from_api_config_upgrade)
+            client.message_callback_add(self.event_handler_rule + "/" + client_id,
+                                        self.on_message_from_event_handler_rule)
         self.logger.debug("\n{0}\n".format(rc))
 
     """                              CALLBACKS                               """
+    """ All function names are created from two parts:
+            'on_message_from' - show action type,
+            second part - show name of topic variable """
     # CONTROLLER CONNECTION CALLBACKS
     def on_message(self, client, userdata, msg):
         self.logger.info("\n[???] [{0}], [{1}] - [{2}]\n".format(client._client_id, msg.topic, msg.payload))
 
-    """ Function handling NEW CONTROLLER CONFIG
-            - will create mqtt client for new controller
-            - will create controller object in API
-            - activate basic subscribers
-    """
     def on_message_from_new_controller_receave(self, client, userdata, msg):
+        """ Function handling new controller registration
+                - create mqtt client for new controller
+                - create controller object in API
+        """
         macAddr = msg.payload.decode()
         try:
             post_data = {}
@@ -161,6 +164,11 @@ class MqttClientSub(object):
                                 Fail to create new client for controller.\nAPI status: {}\n".format(new_controller.status_code))
 
     def on_message_from_api_config_upgrade(self, client, userdata, msg):
+        """ Function handling message from API for updated configs
+                - create new subscribers and kill old
+                - update controller object's subscribers topics in API (put req)
+                - publish new configs
+        """
         client_id = client._client_id.decode()
         controller_data = json.loads(msg.payload.decode())
         sensors = controller_data["pins_configuration"]["sensors"]
@@ -191,22 +199,27 @@ class MqttClientSub(object):
             self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
                                  Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
 
-        """ record new subscribers in db """
-        try:
-            update_subscribers = LocalServerRequests(mac_addr=client_id,
-                                                     data={"subscribers": new_subscribers}).put_subscribers_by_mac()
-        except Exception as e:
-            self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                                 Fail put new subscribers to API.\nerr: {}\n".format(e))
-
-        if update_subscribers.status_code == 200:
-            """ sent new configs to controller """
+        while True:
             try:
-                self._mqttPubMsg(self.controller_configs_sent + "/" + client_id,
-                                 json.dumps({"configs": controller_data}))
+                """ Update subscribers in db """
+                update_subscribers = LocalServerRequests(mac_addr=client_id,
+                                                         data={"subscribers": new_subscribers}).put_subscribers_by_mac()
             except Exception as e:
-                self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                                     Fail sent new config to Controller.\nerr: {}\n".format(e))
+                self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\nerr: {}\n".format(e))
+                continue
+
+            if update_subscribers.status_code == 200:
+                """ sent new configs to controller """
+                try:
+                    self._mqttPubMsg(self.controller_configs_sent + "/" + client_id,
+                                     json.dumps({"configs": controller_data}))
+                except Exception as e:
+                    self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
+                                         Fail sent new config to Controller.\nerr: {}\n".format(e))
+                break
+            else:
+                sleep(1)
+                self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\n")
 
     def on_message_from_controller_configs_receave(self, client, userdata, msg):
         message = msg.payload.decode()
@@ -220,21 +233,23 @@ class MqttClientSub(object):
 
     def on_message_from_controller_data_receave(self, client, userdata, msg):
         print("Dataaaaaaaaaaaaa NEW")
-        for client in self.ctrl_clients_refs:
-            print(client._client_id.decode())
+        try:
+            msg.payload
+            equipped_msg = msg.payload.decode() + " " + client._client_id.decode()
+            self._mqttPubMsg(self.event_handler_data, equipped_msg)
+        except Exception as e:
+            self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
+                                 Fail sent new config to Controller.\nerr: {}\n".format(e))
 
     def on_message_from_controller_logs_receave(self, client, userdata, msg):
         print("New LOGGGGGGGGGGGGGGGGGGGGGGgG")
+        # TODO: Store controller logs
 
     # EVENT HANDLER CONNECTION CALLBACKS
-    def on_message_from_handler(self, client, userdata, msg):
-        """Just resent data from handler to controller"""
-        try:
-            self.logger.info("\n[*] [<--] [CS][EH] New instruction come from Handler\n")
-            self._mqttPubMsg(self.pub_to_ctrl_topic, msg.payload)
-            self.logger.info("\n[*] [-->] [CS][CO] New instruction sended to Controller\n")
-        except Exception as e:
-            self.logger.critical("\n[!][!] [--] [CS][CO] Fail send data to Controller.\nerr: {}\n".format(e))
+    def on_message_from_event_handler_rule(self, client, userdata, msg):
+        print("New Instruction")
+        print(msg.payload)
+        # TODO: Send to controller
 
     """                                UTILS                                 """
     def __on_log(self, client, userdata, level, buf):
@@ -243,8 +258,8 @@ class MqttClientSub(object):
     def _broker_auth(self, client):
         client.username_pw_set(username=self.eh_user, password=self.eh_pwd)
 
-    def on_disconnect(client, userdata, rc=0):
-        print("disconnect {} {}").format(client._client_id, userdata)
+    def on_disconnect(self, client, userdata, rc=0):
+        self.logger.info("\n[*] [DISCONNECT] [{0}]\n".format(client._client_id.decode()))
 
     """                            CLIENT CONFIGS                            """
     def __bootstrap_mqtt_controller_client(self, client_id):
@@ -261,7 +276,7 @@ class MqttClientSub(object):
         return mqtt_controller_cli
 
     def bootstrap_mqtt(self):
-        self.mqttc = paho.Client("CommunicatonServiceClient")
+        self.mqttc = paho.Client(self.communicaton_service_client_id)
         self._broker_auth(self.mqttc)
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
@@ -298,4 +313,3 @@ class MqttClientSub(object):
                     raise e
             else:
                 self.logger.debug("\n[!] Attempting to connect!\n")
-

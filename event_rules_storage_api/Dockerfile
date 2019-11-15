@@ -32,7 +32,7 @@ ENV FLASK_APP=run.py
 
 COPY . /usr/src/event_rules_storage_api
 
-RUN chmod +x ./run.sh && echo "$LC_ALL" && echo "$LANG" && echo "$FLASK_CONFIG" && echo "$FLASK_APP"
+RUN echo "$LC_ALL" && echo "$LANG" && echo "$FLASK_CONFIG" && echo "$FLASK_APP"
+RUN chmod +x ./run.sh
 
 CMD ./run.sh
-

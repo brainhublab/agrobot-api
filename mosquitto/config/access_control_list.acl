@@ -1,0 +1,29 @@
+user miagiContr
+topic write ControllerConfigs/receaveNewController
+topic read ControllerConfigs/sent/#
+topic write ControllerConfigs/receave/#
+topic read ControllerRules/sent/#
+topic write ControllerRules/#
+topic write ControllerData/#
+topic write ControllerLogs/#
+
+user miagiCom
+topic read ControllerConfigs/receaveNewController
+topic write ControllerConfigs/sent/#
+topic read ControllerConfigs/receave/#
+topic write ControllerRules/sent/#
+topic read ControllerRules/receave/#
+topic read ControllerData/#
+topic read ControllerLogs/#
+topic write EventHandler/data
+topic read EventHandler/rule/#
+topic read ApiNewRule/#
+topic read ApiConfigUpdate/#
+
+user miagiEh
+topic read EventHandler/data
+topic write EventHandler/rule/#
+
+user miagiAPI
+topic write ApiNewRule/#
+topic write ApiConfigUpdate/#

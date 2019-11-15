@@ -1,0 +1,23 @@
+ClientRegistrator --> subscribe --> (topic) ControllerConfigs/receaveNewController
+    => on_message =>
+        create:
+          ClientController/(MAC):
+            /    action      /       topic                     /
+            ----------------------------------------------------
+            -->  publishing --> ControllerConfigs/sent/(MAC)
+            -->  subscribe --> ControllerConfigs/receave/(MAC)
+
+            -->  subscribe --> ApiConfigUpdate/(MAC)
+            -->  subscribe --> ApiNewRule/(MAC)
+
+            -->  publishing --> ControllerRules/sent/(MAC)
+            -->  subscribe --> ControllersRules/receave/(MAC)
+
+            -->  publishing --> EventHandler/data
+            -->  subscribe --> EventHandler/rule/(MAC)
+            
+            for sensor in controller:
+                /    action      /       topic                     /
+                ----------------------------------------------------
+                -->  subscribe --> ControllerData/(MAC)/(sensor_id)
+                -->  subscribe --> ControllerLogs/(MAC)/(sensor_id)

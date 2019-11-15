@@ -27,7 +27,4 @@ RUN apk add --no-cache --virtual .build-deps \
 
 COPY . /usr/src/event_handler
 
-RUN chmod +x ./run.sh
-
-CMD ./run.sh
-
+CMD python3 auto_reload.py python3 main.py

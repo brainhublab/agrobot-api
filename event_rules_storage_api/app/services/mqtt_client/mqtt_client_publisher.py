@@ -1,7 +1,5 @@
 import paho.mqtt.client as paho
-import os
 import logging
-import json
 from time import sleep
 from flask import current_app as app
 
@@ -80,5 +78,4 @@ class MqttClientPub(object):
                 except Exception as e:
                     raise e
             else:
-                self.logger.debug("\n[!] [EH] [!] Attempting to connect!\n")
-
+                self.logger.debug("\n[!] [EH] [!] Attempting to connect!!\n")

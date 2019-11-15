@@ -28,4 +28,3 @@ RUN apk add --no-cache --virtual .build-deps \
 COPY . /usr/src/communication_service
 
 CMD python3 auto_reload.py python3 main.py
-
