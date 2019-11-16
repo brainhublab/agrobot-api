@@ -213,7 +213,8 @@ class MqttClientSub(object):
             if update_subscribers.status_code == 200:
                 """ sent new configs to controller """
                 try:
-                    self._mqttPubMsg(self.controller_configs_sent + "/" + client_id,
+                    self._mqttPubMsg(client,
+                                     self.controller_configs_sent + "/" + client_id,
                                      json.dumps({"configs": controller_data}))
                 except Exception as e:
                     self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
@@ -236,7 +237,7 @@ class MqttClientSub(object):
         try:
             msg.payload
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
-            self._mqttPubMsg(self.event_handler_data, equipped_msg)
+            self._mqttPubMsg(client, self.event_handler_data, equipped_msg)
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [CONTROLLER_DATA_RECEAVE][PUB] \
                                  Fail sent data to event_handler.\nerr: {}\n".format(e))
@@ -252,7 +253,7 @@ class MqttClientSub(object):
         try:
             equipped_topic = self.controller_rules_sent + "/" + client._client_id.decode()
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
-            self._mqttPubMsg(equipped_topic, equipped_msg)
+            self._mqttPubMsg(client, equipped_topic, equipped_msg)
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [EVENT_HANDLER_RULE][PUB] \
                                  Fail sent new rule to Controller.\nerr: {}\n".format(e))
@@ -318,14 +319,14 @@ class MqttClientSub(object):
             for client in self.ctrl_clients_refs:
                 client.loop_stop()
 
-    def _mqttPubMsg(self, topic, data):
+    def _mqttPubMsg(self, client, topic, data):
         while True:
             sleep(2)
-            if self.connect is True:
-                try:
-                    self.mqttc.publish(topic, data, qos=1)
-                    break
-                except Exception as e:
-                    raise e
+            try:
+                client.publish(topic, data, qos=1)
+                break
+            except Exception as e:
+                raise e
+                continue
             else:
                 self.logger.debug("\n[!] Attempting to connect!\n")

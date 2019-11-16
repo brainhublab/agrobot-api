@@ -81,7 +81,7 @@ class MqttClientSub(object):
 
         equipped_topic = self.event_handler_rule + "/" + ctrl_client_id
         try:
-            self._mqttPubMsg(equipped_topic, data)
+            self._mqttPubMsg(client, equipped_topic, data)
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [EVENT_HANDLER_RULE] [PUB] \
                      Fail sent new config to Communication service's ctrl client.\nerr: {}\n".format(e))
@@ -126,14 +126,14 @@ class MqttClientSub(object):
         while not self.kill:
             self.mqttc.loop()
 
-    def _mqttPubMsg(self, topic, data):
+    def _mqttPubMsg(self, client, topic, data):
         while True:
             sleep(2)
-            if self.connect is True:
-                try:
-                    self.mqttc.publish(topic, data, qos=1)
-                    break
-                except Exception as e:
-                    raise e
+            try:
+                client.publish(topic, data, qos=1)
+                break
+            except Exception as e:
+                raise e
+                continue
             else:
                 self.logger.debug("\n[!] Attempting to connect!\n")

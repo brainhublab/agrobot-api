@@ -70,16 +70,16 @@ class MqttClientPub(object):
         return self
 
     def pubUpdatedConfigs(self, topic, data):
-        self.mqttc.loop_start()
         while True:
-            print("")
-            sleep(2)
-            if self.connect is True:
-                try:
-                    self.mqttc.publish(topic, data, qos=1)
-                    self.mqttc.loop_stop()
-                    break
-                except Exception as e:
-                    raise e
+            try:
+                self.mqttc.loop_start()
+                self.mqttc.publish(topic, data, qos=1)
+                self.mqttc.loop_stop()
+                self.mqttc.disconnect()
+                break
+            except Exception as e:
+                self.logger.critical("\n[!] [Cnnot send data]!!\n")
+                raise e
+                continue
             else:
                 self.logger.debug("\n[!] [EH] [!] Attempting to connect!!\n")
