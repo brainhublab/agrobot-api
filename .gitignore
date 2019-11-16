@@ -8,3 +8,9 @@ env-raspberry
 env-local
 env-communication-service-local
 env-communication-service-raspberry
+certs/ca.crt
+certs/server.crt
+certs/server.key
+certs/ca.key
+certs/ca.srl
+certs/server.csr

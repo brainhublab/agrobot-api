@@ -4,6 +4,7 @@ import os
 from time import sleep
 import json
 import sys
+import ssl
 import logging
 sys.path.insert(0, os.path.abspath('..'))
 from configure_instructions_engine.conf_engine import InstructionGenerator
@@ -72,14 +73,15 @@ class MqttClientSub(object):
         self.logger.info("\n[???] [{0}], [{1}] - [{2}]\n".format(client._client_id, msg.topic, msg.payload))
 
     def on_message_from_event_handler_data(self, client, userdata, msg):
-        print(msg.payload.decode())
         ctrl_client_id = msg.payload.decode().split(" ")[-1]
-        data = "INSTRUCTIONNNN " + " ".join(msg.payload.decode().split(" ")[0:-1])  # .join(" ")
+        data = " ".join(msg.payload.decode().split(" ")[0:-1]) + " [EVENT HANDLER]"
+
         # TODO: Make instruction with new data
         # InstructionGenerator
-        topic = self.event_handler_rule + "/" + ctrl_client_id
+
+        equipped_topic = self.event_handler_rule + "/" + ctrl_client_id
         try:
-            self._mqttPubMsg(topic, data)
+            self._mqttPubMsg(equipped_topic, data)
         except Exception as e:
             self.logger.critical("\n[!][!] [--] [EVENT_HANDLER_RULE] [PUB] \
                      Fail sent new config to Communication service's ctrl client.\nerr: {}\n".format(e))
@@ -99,9 +101,13 @@ class MqttClientSub(object):
     def bootstrap_mqtt(self):
         self.mqttc = paho.Client(self.event_handler_client_id)
         self._broker_auth(self.mqttc)
+        self.mqttc.tls_set('/usr/src/event_handler/mqtt_services/ca.crt',
+                           tls_version=ssl.PROTOCOL_TLSv1)
+        self.mqttc.tls_insecure_set(True)
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log
+        self.mqttc.on_disconnect = self.on_disconnect
 
         result_of_connection = self.mqttc.connect(self.broker_url, self.broker_port, keepalive=120)
         if result_of_connection == 0:

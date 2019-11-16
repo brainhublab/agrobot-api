@@ -21,5 +21,3 @@ six==1.12.0
 SQLAlchemy==1.2.16
 Werkzeug==0.14.1
 paho-mqtt==1.4.0
-cryptography==2.8
-

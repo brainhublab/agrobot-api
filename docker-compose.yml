@@ -4,6 +4,13 @@ networks:
   local_auto_tier:
     driver: bridge
 
+secrets:
+  ca.crt:
+    file: ./certs/ca.crt
+  server.crt:
+    file: ./certs/server.crt
+  server.key:
+    file: ./certs/server.key
 
 services:
     event_rules_storage_api:
@@ -24,6 +31,9 @@ services:
         depends_on:
             - db
         network_mode: host
+        secrets:
+          - source: ca.crt
+            target: /usr/src/event_rules_storage_api/app/services/mqtt_client/ca.crt
         # networks:
         #     - local_auto_tier
 
@@ -63,6 +73,13 @@ services:
       depends_on:
         - event_rules_storage_api
       network_mode: host
+      secrets:
+        - source: ca.crt
+          target: /ca.crt
+        - source: server.crt
+          target: /server.crt
+        - source: server.key
+          target: /server.key
       # networks:
       #   - local_auto_tier
 
@@ -84,7 +101,9 @@ services:
       depends_on:
         - mosquitto
       network_mode: host
-      # networks:
+      secrets:
+        - source: ca.crt
+          target: /usr/src/communication_service/mqtt_services/ca.crt
       #     - local_auto_tier
 
     event_handler:
@@ -105,6 +124,9 @@ services:
       depends_on:
         - communication_service
       network_mode: host
+      secrets:
+        - source: ca.crt
+          target: /usr/src/event_handler/mqtt_services/ca.crt
       # networks:
       #     - local_auto_tier
 

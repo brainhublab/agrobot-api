@@ -4,5 +4,3 @@ idna==2.8
 paho-mqtt==1.4.0
 requests==2.22.0
 urllib3==1.25.6
-cryptography==2.8
-

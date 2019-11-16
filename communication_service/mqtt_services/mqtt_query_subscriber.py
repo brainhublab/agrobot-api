@@ -5,6 +5,8 @@ from time import sleep
 import json
 import sys
 import logging
+import ssl
+sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
 from http_requests.requestss import LocalServerRequests
 
@@ -196,7 +198,7 @@ class MqttClientSub(object):
                 client.message_callback_add(log_sub,
                                             self.on_message_from_controller_logs_receave)
         except Exception as e:
-            self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
+            self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE] \
                                  Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
 
         while True:
@@ -219,7 +221,6 @@ class MqttClientSub(object):
                 break
             else:
                 sleep(1)
-                self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\n")
 
     def on_message_from_controller_configs_receave(self, client, userdata, msg):
         message = msg.payload.decode()
@@ -232,14 +233,13 @@ class MqttClientSub(object):
         # TODO: check what kind of message will come
 
     def on_message_from_controller_data_receave(self, client, userdata, msg):
-        print("Dataaaaaaaaaaaaa NEW")
         try:
             msg.payload
-            equipped_msg = msg.payload.decode() + " " + client._client_id.decode()
+            equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
             self._mqttPubMsg(self.event_handler_data, equipped_msg)
         except Exception as e:
-            self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                                 Fail sent new config to Controller.\nerr: {}\n".format(e))
+            self.logger.critical("\n[!][!] [--] [CONTROLLER_DATA_RECEAVE][PUB] \
+                                 Fail sent data to event_handler.\nerr: {}\n".format(e))
 
     def on_message_from_controller_logs_receave(self, client, userdata, msg):
         print("New LOGGGGGGGGGGGGGGGGGGGGGGgG")
@@ -247,9 +247,15 @@ class MqttClientSub(object):
 
     # EVENT HANDLER CONNECTION CALLBACKS
     def on_message_from_event_handler_rule(self, client, userdata, msg):
-        print("New Instruction")
-        print(msg.payload)
-        # TODO: Send to controller
+        message = msg.payload.decode() + " [COMMUNICATION_SERVICE]"
+        print(message)
+        try:
+            equipped_topic = self.controller_rules_sent + "/" + client._client_id.decode()
+            equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
+            self._mqttPubMsg(equipped_topic, equipped_msg)
+        except Exception as e:
+            self.logger.critical("\n[!][!] [--] [EVENT_HANDLER_RULE][PUB] \
+                                 Fail sent new rule to Controller.\nerr: {}\n".format(e))
 
     """                                UTILS                                 """
     def __on_log(self, client, userdata, level, buf):
@@ -263,26 +269,35 @@ class MqttClientSub(object):
 
     """                            CLIENT CONFIGS                            """
     def __bootstrap_mqtt_controller_client(self, client_id):
-        mqtt_controller_cli = paho.Client(client_id=client_id, clean_session=False)
+        mqtt_controller_cli = paho.Client(client_id=client_id, clean_session=False, protocol=paho.MQTTv311)
         self._broker_auth(mqtt_controller_cli)
+        mqtt_controller_cli.tls_set(ca_certs='/usr/src/communication_service/mqtt_services/ca.crt',
+                                    tls_version=ssl.PROTOCOL_TLSv1)
+        mqtt_controller_cli.tls_insecure_set(True)
         mqtt_controller_cli.on_connect = self.__on_connect_controller_client
         mqtt_controller_cli.on_message = self.on_message
         mqtt_controller_cli.on_log = self.__on_log
+        mqtt_controller_cli.on_disconnect = self.on_disconnect
         result_of_connection = mqtt_controller_cli.connect(self.broker_url, self.broker_port, keepalive=120)
-
         self.ctrl_clients_refs.append(mqtt_controller_cli)
         if result_of_connection == 0:
             mqtt_controller_cli.loop_start()
         return mqtt_controller_cli
 
     def bootstrap_mqtt(self):
-        self.mqttc = paho.Client(self.communicaton_service_client_id)
+        print(self.broker_url)
+
+        self.mqttc = paho.Client(self.communicaton_service_client_id, protocol=paho.MQTTv311)
         self._broker_auth(self.mqttc)
+        self.mqttc.tls_set('/usr/src/communication_service/mqtt_services/ca.crt',
+                           tls_version=ssl.PROTOCOL_TLSv1)
+        self.mqttc.tls_insecure_set(True)
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log
+        self.mqttc.on_disconnect = self.on_disconnect
 
-        result_of_connection = self.mqttc.connect(self.broker_url, self.broker_port, keepalive=120)
+        result_of_connection = self.mqttc.connect(self.broker_url, self.broker_port)
         if result_of_connection == 0:
             self.connect = True
 
@@ -295,6 +310,7 @@ class MqttClientSub(object):
         self.logger.info("{0}".format("\n[*] [Query listeners are Up!]\n"))
         signal.signal(signal.SIGINT, self.sepuko)
         signal.signal(signal.SIGTERM, self.sepuko)
+        print(self.broker_url)
 
         while not self.kill:
             self.mqttc.loop()
