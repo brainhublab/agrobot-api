@@ -23,11 +23,8 @@ API_MQTT_USER = os.environ.get("API_MQTT_USER")
 API_MQTT_PASSWORD = os.environ.get("API_MQTT_PASSWORD")
 
 TOKEN = os.environ.get("TOKEN")
-# SQLALCHEMY_DATABASE_URI = "postgresql://testadmin:testtest@db/testdb"
 
-# TOKEN = "fe742bcb7bfa0c3ff680be5f84118321c2d2088b"
 SQLALCHEMY_DATABASE_URI = "postgresql://{}:{}@{}/{}".format(POSTGRES_USER,
                                                             POSTGRES_PASSWORD,
                                                             POSTGRES_HOST,
                                                             POSTGRES_DB)
-

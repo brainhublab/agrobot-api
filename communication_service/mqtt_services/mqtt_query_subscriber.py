@@ -6,7 +6,6 @@ import json
 import sys
 import logging
 import ssl
-sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
 from http_requests.requestss import LocalServerRequests
 
@@ -46,7 +45,7 @@ class MqttClientSub(object):
 
     def __reg_logger(self):
         # create logger
-        logger = logging.getLogger(repr(self))
+        logger = logging.getLogger("simple_example")
         logger.setLevel(logging.DEBUG)
 
         # create console handler and set level to debug

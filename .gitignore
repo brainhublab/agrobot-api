@@ -14,3 +14,6 @@ certs/server.key
 certs/ca.key
 certs/ca.srl
 certs/server.csr
+certs/worked_ones
+mosquitto/config/working_conf
+worked_envs

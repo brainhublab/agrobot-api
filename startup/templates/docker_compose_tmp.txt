@@ -65,13 +65,15 @@ services:
       restart: always
       container_name: mosquitto
       expose:
-        - "1883"
+        - "{{ BROKER_PORT }}"
+        # - "1883"
         - "9001"
       env_file:
         - '.env-communication-service'
       ports:
-        - "1883:1883"
+        - "{{ BROKER_PORT }}:{{ BROKER_PORT }}"
         - "9001:9001"
+        # - "1883:1883"
       depends_on:
         - event_rules_storage_api
       network_mode: host
