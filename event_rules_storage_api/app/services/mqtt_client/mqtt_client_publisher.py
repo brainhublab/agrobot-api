@@ -1,6 +1,7 @@
 import paho.mqtt.client as paho
 import logging
 from time import sleep
+import os
 from flask import current_app as app
 import ssl
 
@@ -26,7 +27,8 @@ class MqttClientPub(object):
         ch.setLevel(logging.DEBUG)
 
         # create handler to write error logs in file
-        log_reg = logging.FileHandler('./logs/api_mqtt_client_service.log')
+        os.makedirs(os.path.dirname("./logs/api_mqtt_client_service.log"), exist_ok=True)
+        log_reg = logging.FileHandler("./logs/api_mqtt_client_service.log", mode="w", encoding=None, delay=False)
         log_reg.setLevel(logging.DEBUG)
 
         # create formatter for logger output

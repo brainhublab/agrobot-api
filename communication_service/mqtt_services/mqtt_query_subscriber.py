@@ -53,7 +53,8 @@ class MqttClientSub(object):
         ch.setLevel(logging.DEBUG)
 
         # create handler to write error logs in file
-        log_reg = logging.FileHandler('./logs/communication_service.log')
+        os.makedirs(os.path.dirname('./logs/communication_service.log'), exist_ok=True)
+        log_reg = logging.FileHandler('./logs/communication_service.log', mode="w", encoding=None, delay=False)
         log_reg.setLevel(logging.DEBUG)
 
         # create formatter for logger output

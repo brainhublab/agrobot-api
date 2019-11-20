@@ -40,8 +40,8 @@ class GrowAutomationsStartUp(object):
             ch = logging.StreamHandler()
             ch.setLevel(logging.DEBUG)
 
-            # create handler to write error logs in file
-            log_reg = logging.FileHandler('./logs/startup.log')
+            os.makedirs(os.path.dirname("./logs/startup.log"), exist_ok=True)
+            log_reg = logging.FileHandler('./logs/startup.log', mode="w", encoding=None, delay=False)
             log_reg.setLevel(logging.DEBUG)
 
             # create formatter for logger output
@@ -175,7 +175,7 @@ class GrowAutomationsStartUp(object):
         opt = input("[~] Choose number of option: ")
 
         if opt in ["1", "2", "3"]:
-            # TODO: check / install openssl jinja2
+            # TODO: check / install openssllocal net jinja2
             if opt == "1":
                 self.fill_env_files()
             elif opt == "2":
