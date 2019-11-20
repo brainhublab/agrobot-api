@@ -1,0 +1,20 @@
+pid_file /var/run/mosquitto.pid
+
+persistence true
+persistence_location /mosquitto/data/
+
+acl_file /access_control_list.acl
+
+# Port to use for the default listener.
+port {{ BROKER_PORT }}
+
+log_dest file /mosquitto/log/mosquitto.log
+log_dest stdout
+
+allow_anonymous false
+password_file passwordfile
+
+cafile /ca.crt
+keyfile /server.key
+certfile /server.crt
+tls_version tlsv1

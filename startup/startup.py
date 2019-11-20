@@ -11,7 +11,8 @@ class GrowAutomationsStartUp(object):
         self.api_env_path = "../.env"
         self.communication_env_path = "../.env-communication-service"
         self.cert_folder = "../certs/"
-        self.access_controll_list_path = "../mosquitto/config/access_control_list.acl.test"
+        self.access_controll_list_path = "../mosquitto/config/access_control_list.acl"
+        self.mosquitto_configs_path = "../mosquitto/config/mosquitto.conf"
         self.docker_compose_path = "../docker-compose.yml"
         self.sysLogger = self.__reg_logger()
         self.uiLogger = self.__reg_logger(type=1)
@@ -119,6 +120,13 @@ class GrowAutomationsStartUp(object):
         with open(self.access_controll_list_path, "w+") as f:
             f.write(access_control_list_content)
             self.sysLogger.info("Access controll list created!")
+
+        mosquitto_conf_tmp = env.get_template('mosquitto_conf_tmp.txt')
+        mosquitto_conf_content = mosquitto_conf_tmp.render(BROKER_PORT=BROKER_PORT)
+
+        with open(self.mosquitto_configs_path, "w+") as f:
+            f.write(mosquitto_conf_content)
+            self.sysLogger.info("docker-compose file created!")
 
         docker_compose_tmp = env.get_template('docker_compose_tmp.txt')
         docker_compose_content = docker_compose_tmp.render(BROKER_PORT=BROKER_PORT)
