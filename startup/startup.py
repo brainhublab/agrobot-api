@@ -2,7 +2,6 @@ import sys
 import os
 import logging
 import subprocess
-from jinja2 import Environment, FileSystemLoader
 import getpass
 
 
@@ -58,6 +57,13 @@ class GrowAutomationsStartUp(object):
             return logger
 
     def fill_env_files(self):
+        try:
+            from jinja2 import Environment, FileSystemLoader
+        except Exception:
+            subprocess.call([sys.executable, "-m", "pip", "install", "Jinja2==2.10.3", "--user"])
+        finally:
+            from jinja2 import Environment, FileSystemLoader
+
         POSTGRES_DB = input("[~] Data base name: ")
         POSTGRES_USER = input("[~] Data base user: ")
         POSTGRES_PASSWORD = getpass.getpass("[~] Data base password: ")
@@ -126,7 +132,7 @@ class GrowAutomationsStartUp(object):
 
         with open(self.mosquitto_configs_path, "w+") as f:
             f.write(mosquitto_conf_content)
-            self.sysLogger.info("docker-compose file created!")
+            self.sysLogger.info("Mosquitto config file created!")
 
         docker_compose_tmp = env.get_template('docker_compose_tmp.txt')
         docker_compose_content = docker_compose_tmp.render(BROKER_PORT=BROKER_PORT)
@@ -136,6 +142,14 @@ class GrowAutomationsStartUp(object):
             self.sysLogger.info("docker-compose file created!")
 
     def create_certs(self):
+        self.sysLogger.info("To create certificates please install ")
+        try:
+            openssl_install_cmd = "sudo apt-get install openssl"
+            openssl_install_cmd = "sudo pacman -S openssl"
+            subprocess.call(openssl_install_cmd, shell=True)
+        except Exception:
+            self.sysLogger.info("Fail to install 'openssl'!\n Error: {}".format(e))
+
         self.uiLogger.info("Start creating certficates for!")
         self.uiLogger.info("Need to fill in some data!")
         self.uiLogger.info("\n\n")

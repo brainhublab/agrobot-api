@@ -19,4 +19,3 @@ class InstructionGenerator(object):
         except Exception as e:
             raise e
         return self.data
-
