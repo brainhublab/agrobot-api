@@ -110,8 +110,8 @@ class MqttClientSub(object):
                             ctrl_client.message_callback_add(log_sub,
                                                              self.on_message_from_controller_logs_receave)
                     except Exception as e:
-                        self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                                             Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
+                        self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receave]"
+                                              "Fail to connect / disconnect subscriber.\nerr: {}\n").format(e))
         self.logger.debug("\n{0}\n".format(rc))
 
     def __on_connect_controller_client(self, client, userdata, flags, rc):
@@ -156,14 +156,15 @@ class MqttClientSub(object):
             post_data["pins_configuration"] = {}
             new_controller = LocalServerRequests(data=post_data).post_new_controller()
         except Exception as e:
-            self.logger.critical("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
-                                 Fail create new controller on API.\nerr: {}\n".format(e))
+            self.logger.critical(("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] "
+                                  "Fail create new controller on API.\nerr: {}\n").format(e))
 
         if new_controller.status_code == 201:
             self.__bootstrap_mqtt_controller_client(macAddr)
         else:
-            self.logger.warning("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] \
-                                Fail to create new client for controller.\nAPI status: {}\n".format(new_controller.status_code))
+            self.logger.warning(("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] "
+                                 "Fail to create new client for controller. "
+                                 "API status: {}\n").format(new_controller.status_code))
 
     def on_message_from_api_config_upgrade(self, client, userdata, msg):
         """ Function handling message from API for updated configs
@@ -172,56 +173,79 @@ class MqttClientSub(object):
                 - publish new configs
         """
         client_id = client._client_id.decode()
-        controller_data = json.loads(msg.payload.decode())
-        sensors = controller_data["pins_configuration"]["sensors"]
-        existed_subscribers = controller_data["subscribers"]
-        new_subscribers = []
+        data = json.loads(msg.payload.decode())
+        existed_subscribers = data["subscribers"]
 
-        try:
-            if existed_subscribers:
-                """ Disconnect old subscribers """
-                for sub in existed_subscribers:
-                    client.unsubscribe(sub)
-
-            """ Connected new config subscribers """
-            for sensor in sensors:
-                log_sub = self.controller_logs_receave + "/" + client_id + "/" + sensor["id"]
-                data_sub = self.controller_data_receave + "/" + client_id + "/" + sensor["id"]
-                new_subscribers.append(log_sub)
-                new_subscribers.append(data_sub)
-
-                client.subscribe(data_sub)
-                client.subscribe(log_sub)
-
-                client.message_callback_add(data_sub,
-                                            self.on_message_from_controller_data_receave)
-                client.message_callback_add(log_sub,
-                                            self.on_message_from_controller_logs_receave)
-        except Exception as e:
-            self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE] \
-                                 Fail to connect / disconnect subscriber.\nerr: {}\n".format(e))
-
-        while True:
+        if data["delete"] is True:
             try:
-                """ Update subscribers in db """
-                update_subscribers = LocalServerRequests(mac_addr=client_id,
-                                                         data={"subscribers": new_subscribers}).put_subscribers_by_mac()
-            except Exception as e:
-                self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\nerr: {}\n".format(e))
-                continue
+                self._mqttPubMsg(client,
+                                 self.controller_configs_sent + "/" + client_id,
+                                 json.dumps({"configs": data}))
+                """ Disconnect all subscribers on this client """
+                if existed_subscribers:
+                    for sub in existed_subscribers:
+                        client.unsubscribe(sub)
+                client.unsubscribe(self.controller_configs_receave + "/" + client_id)
+                client.unsubscribe(self.controller_rules_receave + "/" + client_id)
+                client.unsubscribe(self.api_config_upgrade + "/" + client_id)
+                client.unsubscribe(self.event_handler_rule + "/" + client_id)
 
-            if update_subscribers.status_code == 200:
-                """ sent new configs to controller """
+                """ Disconnect controller client and remove from client references list"""
+                if client in self.ctrl_clients_refs:
+                    self.ctrl_clients_refs.remove(client)
+                client.loop_stop()
+            except Exception as e:
+                self.logger.critical(("\n[!][!] [--] [DELETE CONTROLLER] "
+                                      "Fail to disconnect client and subscribers.\nerr: {}\n").format(e))
+        else:
+            sensors = data["pins_configuration"]["sensors"]
+            new_subscribers = []
+
+            try:
+                if existed_subscribers:
+                    """ Disconnect old subscribers """
+                    for sub in existed_subscribers:
+                        client.unsubscribe(sub)
+
+                """ Connected new config subscribers """
+                for sensor in sensors:
+                    log_sub = self.controller_logs_receave + "/" + client_id + "/" + sensor["id"]
+                    data_sub = self.controller_data_receave + "/" + client_id + "/" + sensor["id"]
+                    new_subscribers.append(log_sub)
+                    new_subscribers.append(data_sub)
+
+                    client.subscribe(data_sub)
+                    client.subscribe(log_sub)
+
+                    client.message_callback_add(data_sub,
+                                                self.on_message_from_controller_data_receave)
+                    client.message_callback_add(log_sub,
+                                                self.on_message_from_controller_logs_receave)
+            except Exception as e:
+                self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE] "
+                                      "Fail to connect / disconnect subscriber.\nerr: {}\n").format(e))
+
+            while True:
                 try:
-                    self._mqttPubMsg(client,
-                                     self.controller_configs_sent + "/" + client_id,
-                                     json.dumps({"configs": controller_data}))
+                    """ Update subscribers in db """
+                    update_subscribers = LocalServerRequests(mac_addr=client_id,
+                                                             data={"subscribers": new_subscribers}).put_subscribers_by_mac()
                 except Exception as e:
-                    self.logger.critical("\n[!][!] [--] [API_CONFIG_UPDATE][receave] \
-                                         Fail sent new config to Controller.\nerr: {}\n".format(e))
-                break
-            else:
-                sleep(1)
+                    self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\nerr: {}\n".format(e))
+                    continue
+
+                if update_subscribers.status_code == 200:
+                    """ sent new configs to controller """
+                    try:
+                        self._mqttPubMsg(client,
+                                         self.controller_configs_sent + "/" + client_id,
+                                         json.dumps({"configs": data}))
+                    except Exception as e:
+                        self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receave] "
+                                              "Fail sent new config to Controller.\nerr: {}\n").format(e))
+                    break
+                else:
+                    sleep(1)
 
     def on_message_from_controller_configs_receave(self, client, userdata, msg):
         message = msg.payload.decode()
@@ -239,12 +263,11 @@ class MqttClientSub(object):
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
             self._mqttPubMsg(client, self.event_handler_data, equipped_msg)
         except Exception as e:
-            self.logger.critical("\n[!][!] [--] [CONTROLLER_DATA_RECEAVE][PUB] \
-                                 Fail sent data to event_handler.\nerr: {}\n".format(e))
+            self.logger.critical(("\n[!][!] [--] [CONTROLLER_DATA_RECEAVE][PUB] "
+                                 "Fail sent data to event_handler.\nerr: {}\n").format(e))
 
     def on_message_from_controller_logs_receave(self, client, userdata, msg):
-        print("New LOGGGGGGGGGGGGGGGGGGGGGGgG")
-        # TODO: Store controller logs
+        self.logger.warning("\n[!][*] [{0}] [CONTROLLER LOG] [{1}]".format(client._client_id.decode(), msg.payload.decode()))
 
     # EVENT HANDLER CONNECTION CALLBACKS
     def on_message_from_event_handler_rule(self, client, userdata, msg):
@@ -255,12 +278,12 @@ class MqttClientSub(object):
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
             self._mqttPubMsg(client, equipped_topic, equipped_msg)
         except Exception as e:
-            self.logger.critical("\n[!][!] [--] [EVENT_HANDLER_RULE][PUB] \
-                                 Fail sent new rule to Controller.\nerr: {}\n".format(e))
+            self.logger.critical(("\n[!][!] [--] [EVENT_HANDLER_RULE][PUB] "
+                                  "Fail sent new rule to Controller.\nerr: {}\n").format(e))
 
     """                                UTILS                                 """
     def __on_log(self, client, userdata, level, buf):
-        self.logger.info("\n[*][{0}] [{1}] [{2}]\n".format(client._client_id.decode(), level, buf))
+        self.logger.info("\n[*] [{0}] [{1}] [{2}]\n".format(client._client_id.decode(), level, buf))
 
     def _broker_auth(self, client):
         client.username_pw_set(username=self.eh_user, password=self.eh_pwd)

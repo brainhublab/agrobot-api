@@ -56,8 +56,7 @@ parser_put_subs.add_argument("subscribers",
                              required=True,
                              location="json",
                              type=list,
-                             help="subscribers cannot be empty list"
-                             )
+                             help="subscribers cannot be empty list")
 
 
 class ControllerAuth(Resource):
@@ -144,6 +143,7 @@ class CControllers(Resource):
             controller_to_update.pins_configuration = args["pins_configuration"]
             db.session.commit()
             new_data = controller_to_update.toDict()
+            new_data["delete"] = False
             try:
                 topic = app.config["API_CONFIG_UPDATE"] + "/" + new_data["mac_addr"]
                 MqttClientPub().bootstrap_mqtt().pubUpdatedConfigs(topic, json.dumps(new_data))
@@ -158,6 +158,13 @@ class CControllers(Resource):
     def delete(self, id):
         controller = Controller.query.filter_by(id=id).first()
         if controller:
+            """ Send delete instruction to communication service """
+            data_to_send = controller.toDict()
+            data_to_send["delete"] = True
+            topic = app.config["API_CONFIG_UPDATE"] + "/" + data_to_send["mac_addr"]
+            MqttClientPub().bootstrap_mqtt().pubUpdatedConfigs(topic, json.dumps(data_to_send))
+
+            """ Remove controller from db """
             db.session.delete(controller)
             db.session.commit()
             return {"message": "ok"}, 200
@@ -166,4 +173,3 @@ class CControllers(Resource):
 
 
 api.add_resource(CControllers, "/api/controllers/<int:id>/")
-

@@ -171,23 +171,30 @@ class GrowAutomationsStartUp(object):
         self.sysLogger.info("Broker key pair - [created]")
 
         # [4]
-        self.sysLogger.info("Set 'common name' to be IP publick IP addres!!!/for development (set ip addres of machine il localhost)/")
+        self.sysLogger.info("Set 'common name' to be IP publick IP addres!!! "
+                            "/for development (set ip addres of machine il localhost)/")
         self.sysLogger.info("Don't password protect!!!")
         server_csr_cmd = "openssl req -new -out {0}server.csr -key {0}server.key".format(self.cert_folder)
         subprocess.call(server_csr_cmd, shell=True)
         self.sysLogger.info("Broker certificate - [created]")
 
         # [5]
-        server_crt_cmd = "openssl x509 -req -in {0}server.csr -CA {0}ca.crt -CAkey {0}ca.key -CAcreateserial -out {0}server.crt -days 36000".format(self.cert_folder)
+        server_crt_cmd = ("openssl x509 -req -in {0}server.csr -CA {0}ca.crt "
+                          "-CAkey {0}ca.key -CAcreateserial -out {0}server.crt "
+                          "-days 36000").format(self.cert_folder)
         subprocess.call(server_crt_cmd, shell=True)
         self.sysLogger.info("Signed broker certificate - [created]")
 
     def start(self):
         self.uiLogger.info("\n\n")
-        self.uiLogger.info(" dP**b8 88**Yb  dP*Yb  Yb        dP 88 88b 88        db    88   88 888888  dP*Yb  8b    d8    db    888888 88  dP*Yb  88b 88 .dP*Y8")
-        self.uiLogger.info("dP   `* 88__dP dP   Yb  Yb  db  dP  88 88Yb88       dPYb   88   88   88   dP   Yb 88b  d88   dPYb     88   88 dP   Yb 88Yb88 `Ybo.*")
-        self.uiLogger.info("Yb  *88 88*Yb  Yb   dP   YbdPYbdP   88 88 Y88      dP__Yb  Y8   8P   88   Yb   dP 88YbdP88  dP__Yb    88   88 Yb   dP 88 Y88 o.`Y8b")
-        self.uiLogger.info(" YboodP 88  Yb  YbodP     YP  YP    88 88  Y8     dP****Yb `YbodP'   88    YbodP  88 YY 88 dP====Yb   88   88  YbodP  88  Y8 8bodP'")
+        self.uiLogger.info(" dP**b8 88**Yb  dP*Yb  Yb        dP 88 88b 88 "
+                           "       db    88   88 888888  dP*Yb  8b    d8    db    888888 88  dP*Yb  88b 88 .dP*Y8")
+        self.uiLogger.info("dP   `* 88__dP dP   Yb  Yb  db  dP  88 88Yb88 "
+                           "      dPYb   88   88   88   dP   Yb 88b  d88   dPYb     88   88 dP   Yb 88Yb88 `Ybo.*")
+        self.uiLogger.info("Yb  *88 88*Yb  Yb   dP   YbdPYbdP   88 88 Y88 "
+                           "     dP__Yb  Y8   8P   88   Yb   dP 88YbdP88  dP__Yb    88   88 Yb   dP 88 Y88 o.`Y8b")
+        self.uiLogger.info(" YboodP 88  Yb  YbodP     YP  YP    88 88  Y8 "
+                           "    dP****Yb `YbodP'   88    YbodP  88 YY 88 dP====Yb   88   88  YbodP  88  Y8 8bodP'")
 
         self.uiLogger.info("\n\n\n\n")
         self.uiLogger.info("[1][*] Fill in the configuration information\n\

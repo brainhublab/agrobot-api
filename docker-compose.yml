@@ -20,8 +20,8 @@ services:
             dockerfile: Dockerfile
         restart: always
         container_name: event_rules_storage_api
-        environment:
-          FLASK_DEBUG: 1
+        # environment:
+        #   FLASK_DEBUG: 1
         ports:
             - 5000:5000
         env_file:
