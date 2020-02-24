@@ -107,4 +107,3 @@ class CRule(Resource):
 
 
 api.add_resource(CRule, "/api/rules/<int:id>/")
-

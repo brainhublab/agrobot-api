@@ -18,6 +18,7 @@ BROKER_PORT = os.environ.get("BROKER_PORT")
 
 API_NEW_RULE = os.environ.get("API_NEW_RULE")
 API_CONFIG_UPDATE = os.environ.get("API_CONFIG_UPDATE")
+API_OBJ_DELETE = os.environ.get("API_OBJ_DELETE")
 
 API_MQTT_USER = os.environ.get("API_MQTT_USER")
 API_MQTT_PASSWORD = os.environ.get("API_MQTT_PASSWORD")

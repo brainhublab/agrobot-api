@@ -26,12 +26,14 @@ class MqttClientSub(object):
         self.controller_rules_sent = os.environ.get("CONTROLLER_RULES") + "/sent"
 
         self.api_config_update = os.environ.get("API_CONFIG_UPDATE")
+        self.api_new_rule = os.environ.get("API_NEW_RULE")
+        self.api_obj_delete = os.environ.get("API_OBJ_DELETE")
 
         self.event_handler_data = os.environ.get("EVENT_HANDLER_DATA")
         self.event_handler_rule = os.environ.get("EVENT_HANDLER_RULE")
-        # TODO: change usr psword variables
-        self.eh_user = os.environ.get("COM_MQTT_USER")
-        self.eh_pwd = os.environ.get("COM_MQTT_PASSWORD")
+
+        self.com_user = os.environ.get("COM_MQTT_USER")
+        self.com_pwd = os.environ.get("COM_MQTT_PASSWORD")
 
         self.broker_url = os.environ.get("BROKER_HOST")
         self.broker_port = int(os.environ.get("BROKER_PORT"))
@@ -110,7 +112,7 @@ class MqttClientSub(object):
                             ctrl_client.message_callback_add(log_sub,
                                                              self.on_message_from_controller_logs_receave)
                     except Exception as e:
-                        self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receave]"
+                        self.logger.critical(("\n[!][!] [--] [START LOADS FAIL]"
                                               "Fail to connect / disconnect subscriber.\nerr: {}\n").format(e))
         self.logger.debug("\n{0}\n".format(rc))
 
@@ -122,6 +124,7 @@ class MqttClientSub(object):
             client.subscribe(self.controller_configs_receave + "/" + client_id)
             client.subscribe(self.controller_rules_receave + "/" + client_id)
             client.subscribe(self.api_config_update + "/" + client_id)
+            client.subscribe(self.api_obj_delete + "/" + client_id)
             client.subscribe(self.event_handler_rule + "/" + client_id)
 
             client.message_callback_add(self.controller_configs_receave + "/" + client_id,
@@ -130,6 +133,8 @@ class MqttClientSub(object):
                                         self.on_message_from_controller_rules_receave)
             client.message_callback_add(self.api_config_update + "/" + client_id,
                                         self.on_message_from_api_config_upgrade)
+            client.message_callback_add(self.api_obj_delete + "/" + client_id,
+                                        self.on_message_from_api_obj_delete)
             client.message_callback_add(self.event_handler_rule + "/" + client_id,
                                         self.on_message_from_event_handler_rule)
         self.logger.debug("\n{0}\n".format(rc))
@@ -224,6 +229,46 @@ class MqttClientSub(object):
             else:
                 sleep(1)
 
+    def on_message_from_api_obj_delete(self, client, userdata, msg):
+        """ Function handling message from API for updated configs
+                - disconnect all client subscribers
+                - disconnect client
+        """
+        print("Opaaa")
+        client_id = client._client_id.decode()
+        data = json.loads(msg.payload.decode())
+        existed_subscribers = data["subscribers"]
+        try:
+            if existed_subscribers:
+                """ Disconnect old subscribers """
+                for sub in existed_subscribers:
+                    client.unsubscribe(sub)
+        except Exception as e:
+            self.logger.critical(("\n[!][!] [--] [API_OBJ_DELTE] "
+                                  "Fail to  disconnect subscriber.\nerr: {}\n").format(e))
+
+        try:
+            self._mqttPubMsg(client,
+                             self.controller_configs_sent + "/" + client_id,
+                             json.dumps({"configs": data}))
+            """ Disconnect all subscribers on this client """
+            if existed_subscribers:
+                for sub in existed_subscribers:
+                    client.unsubscribe(sub)
+            client.unsubscribe(self.controller_configs_receave + "/" + client_id)
+            client.unsubscribe(self.controller_rules_receave + "/" + client_id)
+            client.unsubscribe(self.api_config_update + "/" + client_id)
+            client.unsubscribe(self.api_obj_delete + "/" + client_id)
+            client.unsubscribe(self.event_handler_rule + "/" + client_id)
+
+            """ Disconnect controller client and remove from client references list"""
+            if client in self.ctrl_clients_refs:
+                self.ctrl_clients_refs.remove(client)
+            client.loop_stop()
+        except Exception as e:
+            self.logger.critical(("\n[!][!] [--] [DELETE CONTROLLER] "
+                                  "Fail to disconnect client and subscribers.\nerr: {}\n").format(e))
+
     def on_message_from_controller_configs_receave(self, client, userdata, msg):
         message = msg.payload.decode()
         pass
@@ -263,7 +308,7 @@ class MqttClientSub(object):
         self.logger.info("\n[*] [{0}] [{1}] [{2}]\n".format(client._client_id.decode(), level, buf))
 
     def _broker_auth(self, client):
-        client.username_pw_set(username=self.eh_user, password=self.eh_pwd)
+        client.username_pw_set(username=self.com_user, password=self.com_pwd)
 
     def on_disconnect(self, client, userdata, rc=0):
         self.logger.info("\n[*] [DISCONNECT] [{0}]\n".format(client._client_id.decode()))

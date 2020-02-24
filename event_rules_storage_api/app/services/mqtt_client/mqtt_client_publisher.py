@@ -71,7 +71,7 @@ class MqttClientPub(object):
             self.connect = True
         return self
 
-    def pubUpdatedConfigs(self, topic, data):
+    def pub(self, topic, data):
         while True:
             try:
                 self.mqttc.loop_start()
@@ -80,7 +80,7 @@ class MqttClientPub(object):
                 self.mqttc.disconnect()
                 break
             except Exception as e:
-                self.logger.critical("\n[!] [Cnnot send data]!!\n")
+                self.logger.critical("\n[!] [Cаnnot send data]!!\n")
                 raise e
                 continue
             else:

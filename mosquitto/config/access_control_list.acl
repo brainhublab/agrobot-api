@@ -19,6 +19,7 @@ topic write EventHandler/data
 topic read EventHandler/rule/#
 topic read ApiNewRule/#
 topic read ApiConfigUpdate/#
+topic read ApiObjDelete/#
 
 user miagiEh
 topic read EventHandler/data
@@ -27,3 +28,4 @@ topic write EventHandler/rule/#
 user miagiAPI
 topic write ApiNewRule/#
 topic write ApiConfigUpdate/#
+topic write ApiObjDelete/#

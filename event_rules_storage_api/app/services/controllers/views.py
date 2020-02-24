@@ -130,7 +130,7 @@ class CControllers(Resource):
             new_data = controller_to_update.toDict()
             try:
                 topic = app.config["API_CONFIG_UPDATE"] + "/" + new_data["mac_addr"]
-                MqttClientPub().bootstrap_mqtt().pubUpdatedConfigs(topic, json.dumps(new_data))
+                MqttClientPub().bootstrap_mqtt().pub(topic, json.dumps(new_data))
             except Exception as e:
                 print(e)
             return new_data, 200
@@ -139,14 +139,21 @@ class CControllers(Resource):
                 "message": "Obj not found!"
             }, 404
 
+    @auth_check
     def delete(self, id):
         controller = Controller.query.filter_by(id=id).first()
         if controller:
             """ Send delete instruction to communication service """
-            data_to_send = controller.toDict()
-            data_to_send["delete"] = True
-            topic = app.config["API_CONFIG_UPDATE"] + "/" + data_to_send["mac_addr"]
-            MqttClientPub().bootstrap_mqtt().pubUpdatedConfigs(topic, json.dumps(data_to_send))
+
+            data = controller.toDict()
+            data_to_send = {"subscribers": data["subscribers"],
+                            "mac_addr": data["mac_addr"]
+                            }
+            try:
+                topic = app.config["API_OBJ_DELETE"] + "/" + data_to_send["mac_addr"]
+                MqttClientPub().bootstrap_mqtt().pub(topic, json.dumps(data_to_send))
+            except Exception as e:
+                print(e)
 
             """ Remove controller from db """
             db.session.delete(controller)
