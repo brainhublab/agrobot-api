@@ -13,9 +13,9 @@ class MqttClientSub(object):
         self.sub_from_com_service_topic = os.environ.get("COM_SERVICE_INSTRUCTIONS_TO_CONTROLLER")
         self.pub_to_com_service_topic = os.environ.get("CONTROLLER_RAW_DATA_TO_COM_SERVICE")
 
-        self.eh_user = os.environ.get("CONTROLLER_MQTT_USER")
-        self.eh_pwd = os.environ.get("CONTROLLER_MQTT_PASSWORD")
-        self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
+        # self.eh_user = os.environ.get("CONTROLLER_MQTT_USER")
+        # self.eh_pwd = os.environ.get("CONTROLLER_MQTT_PASSWORD")
+        # self.en_de_key = os.environ.get("CRYPTOGRAPHY_KEY")
 
         self.connect = False
         self.listener = listener
@@ -153,4 +153,3 @@ class MqttClientSub(object):
                     raise e
             else:
                 self.logger.debug("\n[!] [EH] [!] Attempting to connect!\n")
-

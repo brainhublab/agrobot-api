@@ -30,7 +30,6 @@ class GlobalServerRequests(object):
 
 
 class LocalServerRequests(object):
-
     def __init__(self, mac_addr="macAddr", data={}):
         self.token = os.environ.get("TOKEN")
         self.mac_addr = mac_addr
@@ -68,4 +67,3 @@ class LocalServerRequests(object):
         url = self._add_mac_addr_to_url(self.api_controllers_subscribers_url)
         response = requests.put(url, headers=headers, json=self.data)
         return response
-

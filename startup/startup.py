@@ -161,12 +161,14 @@ class GrowAutomationsStartUp(object):
 
         # [2]
         self.sysLogger.info("Don't password protect!!!")
-        ca_crt_cmd = "openssl req -new -x509 -days 1826 -key {0}ca.key -out {0}ca.crt".format(self.cert_folder)
+        ca_crt_cmd = ("openssl req -new -x509 -days 1826 -key {0}ca.key "
+                      "-out {0}ca.crt").format(self.cert_folder)
         subprocess.call(ca_crt_cmd, shell=True)
         self.sysLogger.info("CA certificate - [created]")
 
         # [3]
-        server_key_cmd = "openssl genrsa -out {}server.key 2048".format(self.cert_folder)
+        server_key_cmd = ("openssl genrsa -out "
+                          "{}server.key 2048").format(self.cert_folder)
         subprocess.call(server_key_cmd, shell=True)
         self.sysLogger.info("Broker key pair - [created]")
 
@@ -174,7 +176,8 @@ class GrowAutomationsStartUp(object):
         self.sysLogger.info("Set 'common name' to be IP publick IP addres!!! "
                             "/for development (set ip addres of machine il localhost)/")
         self.sysLogger.info("Don't password protect!!!")
-        server_csr_cmd = "openssl req -new -out {0}server.csr -key {0}server.key".format(self.cert_folder)
+        server_csr_cmd = ("openssl req -new -out {0}server.csr "
+                          "-key {0}server.key").format(self.cert_folder)
         subprocess.call(server_csr_cmd, shell=True)
         self.sysLogger.info("Broker certificate - [created]")
 
@@ -197,8 +200,8 @@ class GrowAutomationsStartUp(object):
                            "    dP****Yb `YbodP'   88    YbodP  88 YY 88 dP====Yb   88   88  YbodP  88  Y8 8bodP'")
 
         self.uiLogger.info("\n\n\n\n")
-        self.uiLogger.info("[1][*] Fill in the configuration information\n\
-[2][*] Create mosquitto certificates.")
+        self.uiLogger.info("[1][*] Fill in the configuration information\n"
+                           "[2][*] Create mosquitto certificates.")
         self.uiLogger.info("\n\n")
 
         opt = input("[~] Choose number of option: ")

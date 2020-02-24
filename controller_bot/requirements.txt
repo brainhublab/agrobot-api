@@ -3,4 +3,3 @@ chardet==3.0.4
 idna==2.8
 paho-mqtt==1.4.0
 cryptography==2.8
-

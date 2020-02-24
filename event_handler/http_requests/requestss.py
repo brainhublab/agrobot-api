@@ -1,6 +1,7 @@
 import requests
 import os
 import json
+import datetime
 
 
 class EngineRequests(object):
@@ -15,9 +16,11 @@ class EngineRequests(object):
 
         self.data = data
 
+    """ header assembling """
     def _create_request_header(self):
         return {'Authorization': 'Bearer {}'.format(self.token)}
 
+    """ sensor url assembling """
     def _create_sensor_url(self):
         return self.g_sensors_url + str(self.data["sensor_id"]) + "/"
 
@@ -26,6 +29,12 @@ class EngineRequests(object):
             return False
         else:
             return True
+
+    def validate_date(date_text):
+        try:
+            datetime.datetime.strptime(date_text, '%Y-%m-%d')
+        except ValueError:
+            raise ValueError("Incorrect data format, should be YYYY-MM-DD")
 
     def get_rules_local_server(self):
         url = self.local_automation_rules_url
@@ -132,4 +141,3 @@ class EngineRequests(object):
         response_data = json.loads(response.content)
         results = response_data["results"]
         return results
-

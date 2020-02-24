@@ -2,7 +2,6 @@ import paho.mqtt.client as paho
 import signal
 import os
 from time import sleep
-import json
 import sys
 import ssl
 import logging
@@ -84,8 +83,8 @@ class MqttClientSub(object):
         try:
             self._mqttPubMsg(client, equipped_topic, data)
         except Exception as e:
-            self.logger.critical("\n[!][!] [--] [EVENT_HANDLER_RULE] [PUB] \
-                     Fail sent new config to Communication service's ctrl client.\nerr: {}\n".format(e))
+            self.logger.critical(("\n[!][!] [--] [EVENT_HANDLER_RULE] [PUB] "
+                                  "Fail sent new config to Communication service's ctrl client.\nerr: {}\n").format(e))
 
     """                                UTILS                                 """
     def __on_log(self, client, userdata, level, buf):

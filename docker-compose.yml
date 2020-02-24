@@ -106,7 +106,8 @@ services:
       secrets:
         - source: ca.crt
           target: /usr/src/communication_service/mqtt_services/ca.crt
-      #     - local_auto_tier
+      # networks:
+      #   - local_auto_tier
 
     event_handler:
       image: event_handler:latest

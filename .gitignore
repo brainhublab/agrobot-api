@@ -4,10 +4,6 @@ __pycache__
 .env
 .env-communication-service
 test_scripts
-env-raspberry
-env-local
-env-communication-service-local
-env-communication-service-raspberry
 certs/ca.crt
 certs/server.crt
 certs/server.key
@@ -16,4 +12,5 @@ certs/ca.srl
 certs/server.csr
 certs/worked_ones
 mosquitto/config/working_conf
-worked_envs
+woked_local_envs_docker_yml
+woked_rpi_envs_docker_yml

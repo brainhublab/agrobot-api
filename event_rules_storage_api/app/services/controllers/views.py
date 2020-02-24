@@ -1,8 +1,5 @@
 from . import api
 from flask import current_app as app
-
-# If we do something with db data we need to import SQLalchemy object (db for example)
-# and also to import all models that we will use in our view (for example model "example1")
 from ... import db
 from ...models.controllers import Controller
 from ..utils import parser, is_there_an_object, auth_check
@@ -78,12 +75,6 @@ api.add_resource(ControllerAuth, "/api/controllers/subscribers/<mac_addr>/")
 
 
 class Controllers(Resource):
-    # Documentation for Minimal Flaks-RESTful API you can find here:
-    # https://flask-restful.readthedocs.io/en/latest/quickstart.html#resourceful-routing
-
-    # SQLAlchemy documentation queryng:
-    # https://docs.sqlalchemy.org/en/latest/orm/query.html
-
     @auth_check
     def get(self):
         all_controllers = Controller.query.order_by("updated_on")
@@ -117,12 +108,6 @@ api.add_resource(Controllers, "/api/controllers/")
 
 
 class CControllers(Resource):
-    # Documentation for Minimal Flaks-RESTful API you can find here:
-    # https://flask-restful.readthedocs.io/en/latest/quickstart.html#resourceful-routing
-
-    # SQLAlchemy documentation queryng:
-    # https://docs.sqlalchemy.org/en/latest/orm/query.html
-
     @auth_check
     def get(self, id):
         controller = Controller.query.filter_by(id=id).first()
@@ -143,7 +128,6 @@ class CControllers(Resource):
             controller_to_update.pins_configuration = args["pins_configuration"]
             db.session.commit()
             new_data = controller_to_update.toDict()
-            new_data["delete"] = False
             try:
                 topic = app.config["API_CONFIG_UPDATE"] + "/" + new_data["mac_addr"]
                 MqttClientPub().bootstrap_mqtt().pubUpdatedConfigs(topic, json.dumps(new_data))
