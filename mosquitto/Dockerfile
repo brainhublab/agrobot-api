@@ -4,11 +4,6 @@ COPY docker-entrypoint.sh /
 
 COPY config/mosquitto.conf /
 COPY config/access_control_list.acl /
-COPY config/access_control_list.acl /
-
-COPY config/certs/ca.crt  /
-COPY config/certs/server.key /
-COPY config/certs/server.crt  /
 
 ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
 

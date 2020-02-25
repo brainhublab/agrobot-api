@@ -1,17 +1,5 @@
 version: '3.4'
 
-networks:
-  local_auto_tier:
-    driver: bridge
-
-secrets:
-  ca.crt:
-    file: ./certs/ca.crt
-  server.crt:
-    file: ./certs/server.crt
-  server.key:
-    file: ./certs/server.key
-
 services:
     event_rules_storage_api:
         image: event_rules_storage_api:latest
@@ -31,11 +19,6 @@ services:
         depends_on:
             - db
         network_mode: host
-        secrets:
-          - source: ca.crt
-            target: /usr/src/event_rules_storage_api/app/services/mqtt_client/ca.crt
-        # networks:
-        #     - local_auto_tier
 
     db:
       image: postgres
@@ -53,9 +36,6 @@ services:
       ports:
         - "5432:5432"
       network_mode: host
-      # networks:
-      #     - local_auto_tier
-
 
   # Mosquitto broker for mqtt protocol connection
     mosquitto:
@@ -75,15 +55,6 @@ services:
       depends_on:
         - event_rules_storage_api
       network_mode: host
-      secrets:
-        - source: ca.crt
-          target: /ca.crt
-        - source: server.crt
-          target: /server.crt
-        - source: server.key
-          target: /server.key
-      # networks:
-      #   - local_auto_tier
 
     communication_service:
       image: communication_service:latest
@@ -103,11 +74,6 @@ services:
       depends_on:
         - mosquitto
       network_mode: host
-      secrets:
-        - source: ca.crt
-          target: /usr/src/communication_service/mqtt_services/ca.crt
-      # networks:
-      #   - local_auto_tier
 
     event_handler:
       image: event_handler:latest
@@ -127,11 +93,6 @@ services:
       depends_on:
         - communication_service
       network_mode: host
-      secrets:
-        - source: ca.crt
-          target: /usr/src/event_handler/mqtt_services/ca.crt
-      # networks:
-      #     - local_auto_tier
 
     # controller_bot:
     #   image: controller_bot:latest

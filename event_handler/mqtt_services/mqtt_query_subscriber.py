@@ -3,7 +3,6 @@ import signal
 import os
 from time import sleep
 import sys
-import ssl
 import logging
 sys.path.insert(0, os.path.abspath('..'))
 from configure_instructions_engine.conf_engine import InstructionGenerator
@@ -101,9 +100,6 @@ class MqttClientSub(object):
     def bootstrap_mqtt(self):
         self.mqttc = paho.Client(self.event_handler_client_id)
         self._broker_auth(self.mqttc)
-        self.mqttc.tls_set('/usr/src/event_handler/mqtt_services/ca.crt',
-                           tls_version=ssl.PROTOCOL_TLSv1)
-        self.mqttc.tls_insecure_set(True)
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log

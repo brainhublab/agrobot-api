@@ -12,11 +12,14 @@ CONTROLLER_DATA=ControllerData
 CONTROLLER_LOGS=ControllerLogs
 CONTROLLER_RULES=ControllerRules
 
+# event handler topics
 EVENT_HANDLER_DATA=EventHandler/data
 EVENT_HANDLER_RULE=EventHandler/rule
 
-API_NEW_RULE=ApiNewRule
+# api topics
 API_CONFIG_UPDATE=ApiConfigUpdate
+API_NEW_RULE=ApiNewRule
+API_OBJ_DELETE=ApiObjDelete
 
 TOKEN={{ TOKEN }}
 GLOBAL_SERVER_RAW_DATA_ROUTE=http://localhost:9123/grow_auto_api/rsdata/

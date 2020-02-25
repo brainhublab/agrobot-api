@@ -9,7 +9,6 @@ class GrowAutomationsStartUp(object):
     def __init__(self):
         self.api_env_path = "../.env"
         self.communication_env_path = "../.env-communication-service"
-        self.cert_folder = "../certs/"
         self.access_controll_list_path = "../mosquitto/config/access_control_list.acl"
         self.mosquitto_configs_path = "../mosquitto/config/mosquitto.conf"
         self.docker_compose_path = "../docker-compose.yml"
@@ -141,53 +140,6 @@ class GrowAutomationsStartUp(object):
             f.write(docker_compose_content)
             self.sysLogger.info("docker-compose file created!")
 
-    def create_certs(self):
-        self.sysLogger.info("To create certificates please install ")
-        try:
-            openssl_install_cmd = "sudo apt-get install openssl"
-            openssl_install_cmd = "sudo pacman -S openssl"
-            subprocess.call(openssl_install_cmd, shell=True)
-        except Exception:
-            self.sysLogger.info("Fail to install 'openssl'!\n Error: {}".format(e))
-
-        self.uiLogger.info("Start creating certficates for!")
-        self.uiLogger.info("Need to fill in some data!")
-        self.uiLogger.info("\n\n")
-
-        # [1]
-        ca_key_cmd = "openssl genrsa -des3 -out {}ca.key 2048".format(self.cert_folder)
-        subprocess.call(ca_key_cmd, shell=True)
-        self.sysLogger.info("CA key pair - [created]!")
-
-        # [2]
-        self.sysLogger.info("Don't password protect!!!")
-        ca_crt_cmd = ("openssl req -new -x509 -days 1826 -key {0}ca.key "
-                      "-out {0}ca.crt").format(self.cert_folder)
-        subprocess.call(ca_crt_cmd, shell=True)
-        self.sysLogger.info("CA certificate - [created]")
-
-        # [3]
-        server_key_cmd = ("openssl genrsa -out "
-                          "{}server.key 2048").format(self.cert_folder)
-        subprocess.call(server_key_cmd, shell=True)
-        self.sysLogger.info("Broker key pair - [created]")
-
-        # [4]
-        self.sysLogger.info("Set 'common name' to be IP publick IP addres!!! "
-                            "/for development (set ip addres of machine il localhost)/")
-        self.sysLogger.info("Don't password protect!!!")
-        server_csr_cmd = ("openssl req -new -out {0}server.csr "
-                          "-key {0}server.key").format(self.cert_folder)
-        subprocess.call(server_csr_cmd, shell=True)
-        self.sysLogger.info("Broker certificate - [created]")
-
-        # [5]
-        server_crt_cmd = ("openssl x509 -req -in {0}server.csr -CA {0}ca.crt "
-                          "-CAkey {0}ca.key -CAcreateserial -out {0}server.crt "
-                          "-days 36000").format(self.cert_folder)
-        subprocess.call(server_crt_cmd, shell=True)
-        self.sysLogger.info("Signed broker certificate - [created]")
-
     def start(self):
         self.uiLogger.info("\n\n")
         self.uiLogger.info(" dP**b8 88**Yb  dP*Yb  Yb        dP 88 88b 88 "
@@ -200,18 +152,19 @@ class GrowAutomationsStartUp(object):
                            "    dP****Yb `YbodP'   88    YbodP  88 YY 88 dP====Yb   88   88  YbodP  88  Y8 8bodP'")
 
         self.uiLogger.info("\n\n\n\n")
-        self.uiLogger.info("[1][*] Fill in the configuration information\n"
-                           "[2][*] Create mosquitto certificates.")
+        self.uiLogger.info("[*] Fill in configuration files\n")
+
+        self.uiLogger.info("[1][*] Continue\n"
+                           "[2][*] Reject")
         self.uiLogger.info("\n\n")
 
         opt = input("[~] Choose number of option: ")
 
-        if opt in ["1", "2", "3"]:
-            # TODO: check / install openssllocal net jinja2
+        if opt in ["1", "2"]:
             if opt == "1":
                 self.fill_env_files()
             elif opt == "2":
-                self.create_certs()
+                self.uiLogger.info("Process is rejected")
         else:
             self.uiLogger.info("[!] Bad option number choosen")
 

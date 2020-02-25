@@ -3,7 +3,6 @@ import logging
 from time import sleep
 import os
 from flask import current_app as app
-import ssl
 
 
 class MqttClientPub(object):
@@ -60,9 +59,6 @@ class MqttClientPub(object):
     def bootstrap_mqtt(self):
         self.mqttc = paho.Client()
         self._broker_auth()
-        self.mqttc.tls_set('/usr/src/event_rules_storage_api/app/services/mqtt_client/ca.crt',
-                           tls_version=ssl.PROTOCOL_TLSv1)
-        self.mqttc.tls_insecure_set(True)
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log

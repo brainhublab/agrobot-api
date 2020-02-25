@@ -5,7 +5,6 @@ from time import sleep
 import json
 import sys
 import logging
-import ssl
 sys.path.insert(0, os.path.abspath('..'))
 from http_requests.requestss import LocalServerRequests
 
@@ -234,7 +233,6 @@ class MqttClientSub(object):
                 - disconnect all client subscribers
                 - disconnect client
         """
-        print("Opaaa")
         client_id = client._client_id.decode()
         data = json.loads(msg.payload.decode())
         existed_subscribers = data["subscribers"]
@@ -294,7 +292,6 @@ class MqttClientSub(object):
     # EVENT HANDLER CONNECTION CALLBACKS
     def on_message_from_event_handler_rule(self, client, userdata, msg):
         message = msg.payload.decode() + " [COMMUNICATION_SERVICE]"
-        print(message)
         try:
             equipped_topic = self.controller_rules_sent + "/" + client._client_id.decode()
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
@@ -317,9 +314,6 @@ class MqttClientSub(object):
     def __bootstrap_mqtt_controller_client(self, client_id):
         mqtt_controller_cli = paho.Client(client_id=client_id, clean_session=False, protocol=paho.MQTTv311)
         self._broker_auth(mqtt_controller_cli)
-        mqtt_controller_cli.tls_set(ca_certs='/usr/src/communication_service/mqtt_services/ca.crt',
-                                    tls_version=ssl.PROTOCOL_TLSv1)
-        mqtt_controller_cli.tls_insecure_set(True)
         mqtt_controller_cli.on_connect = self.__on_connect_controller_client
         mqtt_controller_cli.on_message = self.on_message
         mqtt_controller_cli.on_log = self.__on_log
@@ -331,13 +325,8 @@ class MqttClientSub(object):
         return mqtt_controller_cli
 
     def bootstrap_mqtt(self):
-        print(self.broker_url)
-
         self.mqttc = paho.Client(self.communicaton_service_client_id, protocol=paho.MQTTv311)
         self._broker_auth(self.mqttc)
-        self.mqttc.tls_set('/usr/src/communication_service/mqtt_services/ca.crt',
-                           tls_version=ssl.PROTOCOL_TLSv1)
-        self.mqttc.tls_insecure_set(True)
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_message = self.on_message
         self.mqttc.on_log = self.__on_log
@@ -346,7 +335,6 @@ class MqttClientSub(object):
         result_of_connection = self.mqttc.connect(self.broker_url, self.broker_port)
         if result_of_connection == 0:
             self.connect = True
-
         return self
 
     def sepuko(self, signum, frame):
@@ -356,7 +344,6 @@ class MqttClientSub(object):
         self.logger.info("{0}".format("\n[*] [Query listeners are Up!]\n"))
         signal.signal(signal.SIGINT, self.sepuko)
         signal.signal(signal.SIGTERM, self.sepuko)
-        print(self.broker_url)
 
         while not self.kill:
             self.mqttc.loop()
