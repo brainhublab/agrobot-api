@@ -1,10 +1,10 @@
-1) Run  " python /startup/startup.py"  in project.
+1) Run  " python3 /startup/startup.py"  in project.
 
 2) enter "0"  --> 'Choose number of option: 0'
 3) Fill the needed environments. That will create all env files, mqtt users and passwords,
 also will create acess list
 
-last used values:
+last used values (recommended for dev and tests):
 
     "Data base name: testdb"
     "Data base user: testadmin"
