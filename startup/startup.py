@@ -3,6 +3,8 @@ import os
 import logging
 import subprocess
 import getpass
+import string
+import random
 
 
 class GrowAutomationsStartUp(object):
@@ -11,7 +13,6 @@ class GrowAutomationsStartUp(object):
         self.communication_env_path = "../.env-communication-service"
         self.access_controll_list_path = "../mosquitto/config/access_control_list.acl"
         self.mosquitto_configs_path = "../mosquitto/config/mosquitto.conf"
-        self.docker_compose_path = "../docker-compose.yml"
         self.sysLogger = self.__reg_logger()
         self.uiLogger = self.__reg_logger(type=1)
 
@@ -55,7 +56,42 @@ class GrowAutomationsStartUp(object):
             logger.addHandler(log_reg)
             return logger
 
+    def pass_generator(self, size=8, chars=string.ascii_uppercase + string.ascii_lowercase
+                                                                  + string.digits + "!#$%&()*/=?@[]^_{}~"):
+        return ''.join(random.choice(chars) for _ in range(size))
+
+    def port_approver(self, port, used_ports):
+        while port in used_ports or not port.isdecimal():
+            self.uiLogger.info("[!] Bad port input or already in use!")
+            self.uiLogger.info("[!] Ports already in use!--> %s\n" % used_ports)
+            port = input("[~] Select another port: ")
+        else:
+            used_ports.append(port)
+            return port
+
+    def pwd_approver(self, info):
+        while True:
+            pass_var = getpass.getpass(info)
+            if pass_var == "":
+                pass_var = self.pass_generator()
+                return pass_var
+            elif pass_var == getpass.getpass("[~] Re-type PASSWORD: "):
+                return pass_var
+            else:
+                self.uiLogger.info("[!] Password does not match. Try again!\n")
+
+    def usr_approver(self, usr, used_usrs):
+        while usr in used_usrs or len(usr) == 0:
+            self.uiLogger.info("[!] Bad username input or already in use!")
+            self.uiLogger.info("[!] Usernames already in use!--> %s\n" % used_usrs)
+            usr = input("[~] Select another username: ")
+        else:
+            used_usrs.append(usr)
+            return usr
+
     def fill_env_files(self):
+        used_ports = ["5000", "80"]
+        used_usrs = []
         try:
             from jinja2 import Environment, FileSystemLoader
         except Exception:
@@ -64,45 +100,46 @@ class GrowAutomationsStartUp(object):
             from jinja2 import Environment, FileSystemLoader
 
         POSTGRES_DB = input("[~] Data base name: ")
+
         POSTGRES_USER = input("[~] Data base user: ")
-        POSTGRES_PASSWORD = getpass.getpass("[~] Data base password: ")
-        POSTGRES_HOST = input("[~] Data base host: ")
+        POSTGRES_PASSWORD = self.pwd_approver("[~] Data base password: ")
+        POSTGRES_PORT = self.port_approver(input("[~] Data base port: "), used_ports)
 
-        BROKER_PORT = input("[~] Broker port: ")
+        TOKEN = input("[~] API token: ")
 
-        TOKEN = input("[~] Global API token: ")
+        BROKER_PORT = self.port_approver(input("[~] Broker port: "), used_ports)
 
-        CONTROLLER_MQTT_USER = input("[~] CONTROLLER MQTT USER: ")
-        CONTROLLER_MQTT_PASSWORD = getpass.getpass("[~] PASSWORD: ")
+        CONTROLLER_MQTT_USER = self.usr_approver(input("[~] CONTROLLER MQTT USER: "), used_usrs)
+        CONTROLLER_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
 
-        COM_MQTT_USER = input("[~] COM MQTT USER: ")
-        COM_MQTT_PASSWORD = getpass.getpass("[~] PASSWORD: ")
+        COM_MQTT_USER = self.usr_approver(input("[~] COM MQTT USER: "), used_usrs)
+        COM_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
 
-        EH_MQTT_USER = input("[~] EH MQTT USER: ")
-        EH_MQTT_PASSWORD = getpass.getpass("[~] CONTROLLER MQTT PASSWORD: ")
+        EH_MQTT_USER = self.usr_approver(input("[~] EH MQTT USER: "), used_usrs)
+        EH_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
 
-        API_MQTT_USER = input("[~] API MQTT USER: ")
-        API_MQTT_PASSWORD = getpass.getpass("[~] CONTROLLER MQTT PASSWORD: ")
+        API_MQTT_USER = self.usr_approver(input("[~] API MQTT USER: "), used_usrs)
+        API_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
 
         file_loader = FileSystemLoader('templates')
         env = Environment(loader=file_loader)
 
         env_api_tmp = env.get_template('env_api_tmp.txt')
-        api_env_content = env_api_tmp.render(POSTGRES_DB=POSTGRES_DB,
+        env_api_content = env_api_tmp.render(POSTGRES_DB=POSTGRES_DB,
                                              POSTGRES_USER=POSTGRES_USER,
                                              POSTGRES_PASSWORD=POSTGRES_PASSWORD,
-                                             POSTGRES_HOST=POSTGRES_HOST,
+                                             POSTGRES_PORT=POSTGRES_PORT,
                                              BROKER_PORT=BROKER_PORT,
                                              API_MQTT_USER=API_MQTT_USER,
                                              API_MQTT_PASSWORD=API_MQTT_PASSWORD,
                                              TOKEN=TOKEN)
 
         with open(self.api_env_path, "w+") as f:
-            f.write(api_env_content)
+            f.write(env_api_content)
             self.sysLogger.info("API environment created!")
 
         env_communication_service_tmp = env.get_template('env_communication_service_tmp.txt')
-        com_env_content = env_communication_service_tmp.render(BROKER_PORT=BROKER_PORT,
+        env_com_content = env_communication_service_tmp.render(BROKER_PORT=BROKER_PORT,
                                                                TOKEN=TOKEN,
                                                                CONTROLLER_MQTT_USER=CONTROLLER_MQTT_USER,
                                                                CONTROLLER_MQTT_PASSWORD=CONTROLLER_MQTT_PASSWORD,
@@ -113,8 +150,8 @@ class GrowAutomationsStartUp(object):
                                                                API_MQTT_USER=API_MQTT_USER,
                                                                API_MQTT_PASSWORD=API_MQTT_PASSWORD)
         with open(self.communication_env_path, "w+") as f:
-            f.write(com_env_content)
-            self.sysLogger.info("Communication environment created!")
+            f.write(env_com_content)
+            self.sysLogger.info("Communication service environment created!")
 
         access_control_list_tmp = env.get_template('access_control_list_tmp.txt')
         access_control_list_content = access_control_list_tmp.render(CONTROLLER_MQTT_USER=CONTROLLER_MQTT_USER,
@@ -133,13 +170,6 @@ class GrowAutomationsStartUp(object):
             f.write(mosquitto_conf_content)
             self.sysLogger.info("Mosquitto config file created!")
 
-        docker_compose_tmp = env.get_template('docker_compose_tmp.txt')
-        docker_compose_content = docker_compose_tmp.render(BROKER_PORT=BROKER_PORT)
-
-        with open(self.docker_compose_path, "w+") as f:
-            f.write(docker_compose_content)
-            self.sysLogger.info("docker-compose file created!")
-
     def start(self):
         self.uiLogger.info("\n\n")
         self.uiLogger.info(" dP**b8 88**Yb  dP*Yb  Yb        dP 88 88b 88 "
@@ -154,16 +184,15 @@ class GrowAutomationsStartUp(object):
         self.uiLogger.info("\n\n\n\n")
         self.uiLogger.info("[*] Fill in configuration files\n")
 
-        self.uiLogger.info("[1][*] Continue\n"
-                           "[2][*] Reject")
-        self.uiLogger.info("\n\n")
+        self.uiLogger.info("[0][*] Continue\n"
+                           "[1][*] Reject\n")
 
-        opt = input("[~] Choose number of option: ")
-
-        if opt in ["1", "2"]:
-            if opt == "1":
+        opt = input("[~] Choose option(0, 1): ")
+        self.uiLogger.info("\n")
+        if opt in ["0", "1"]:
+            if opt == "0":
                 self.fill_env_files()
-            elif opt == "2":
+            elif opt == "1":
                 self.uiLogger.info("Process is rejected")
         else:
             self.uiLogger.info("[!] Bad option number choosen")

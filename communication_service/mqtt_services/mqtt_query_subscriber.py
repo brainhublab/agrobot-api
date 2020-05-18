@@ -262,6 +262,7 @@ class MqttClientSub(object):
             """ Disconnect controller client and remove from client references list"""
             if client in self.ctrl_clients_refs:
                 self.ctrl_clients_refs.remove(client)
+            client.disconnect()
             client.loop_stop()
         except Exception as e:
             self.logger.critical(("\n[!][!] [--] [DELETE CONTROLLER] "
@@ -337,13 +338,13 @@ class MqttClientSub(object):
             self.connect = True
         return self
 
-    def sepuko(self, signum, frame):
+    def seppuku(self, signum, frame):
         self.kill = True
 
     def start(self):
         self.logger.info("{0}".format("\n[*] [Query listeners are Up!]\n"))
-        signal.signal(signal.SIGINT, self.sepuko)
-        signal.signal(signal.SIGTERM, self.sepuko)
+        signal.signal(signal.SIGINT, self.seppuku)
+        signal.signal(signal.SIGTERM, self.seppuku)
 
         while not self.kill:
             self.mqttc.loop()

@@ -39,4 +39,3 @@ def create_app(config_name):
     app.register_blueprint(controllers_blueprint)
 
     return app
-

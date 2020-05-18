@@ -111,13 +111,13 @@ class MqttClientSub(object):
 
         return self
 
-    def sepuko(self, signum, frame):
+    def seppuku(self, signum, frame):
         self.kill = True
 
     def start(self):
         self.logger.info("{0}".format("\n[*] [Query listeners are Up!]\n"))
-        signal.signal(signal.SIGINT, self.sepuko)
-        signal.signal(signal.SIGTERM, self.sepuko)
+        signal.signal(signal.SIGINT, self.seppuku)
+        signal.signal(signal.SIGTERM, self.seppuku)
 
         while not self.kill:
             self.mqttc.loop()

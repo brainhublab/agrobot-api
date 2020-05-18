@@ -11,6 +11,7 @@ RUN apk add --no-cache --virtual .build-deps \
     ca-certificates gcc postgresql-dev linux-headers musl-dev \
     libffi-dev jpeg-dev zlib-dev \
     && pip install -r requirements.txt \
+    && apk add nginx \
     && find /usr/local \
         \( -type d -a -name test -o -name tests \) \
         -o \( -type f -a -name '*.pyc' -o -name '*.pyo' \) \
@@ -29,6 +30,9 @@ ENV LC_ALL=C.UTF-8
 RUN export LANG=C.UTF-8
 ENV FLASK_CONFIG=development
 ENV FLASK_APP=run.py
+
+RUN mkdir -p /run/nginx
+COPY ./nginx.conf /etc/nginx/
 
 COPY . /usr/src/event_rules_storage_api
 
