@@ -56,8 +56,8 @@ class GrowAutomationsStartUp(object):
             logger.addHandler(log_reg)
             return logger
 
-    def pass_generator(self, size=8, chars=string.ascii_uppercase + string.ascii_lowercase
-                                                                  + string.digits + "!#$%&()*/=?@[]^_{}~"):
+    def random_str_generator(self, size=8, chars=string.ascii_uppercase + string.ascii_lowercase
+                                                                        + string.digits + "!#$%&()*/=?@[]^_{}~"):
         return ''.join(random.choice(chars) for _ in range(size))
 
     def port_approver(self, port, used_ports):
@@ -72,9 +72,8 @@ class GrowAutomationsStartUp(object):
     def pwd_approver(self, info):
         while True:
             pass_var = getpass.getpass(info)
-            if pass_var == "":
-                pass_var = self.pass_generator()
-                return pass_var
+            if len(pass_var) < 8:
+                self.uiLogger.info("[!] Password too short!\n")
             elif pass_var == getpass.getpass("[~] Re-type PASSWORD: "):
                 return pass_var
             else:
@@ -89,9 +88,7 @@ class GrowAutomationsStartUp(object):
             used_usrs.append(usr)
             return usr
 
-    def fill_env_files(self):
-        used_ports = ["5000", "80"]
-        used_usrs = []
+    def fill_env_files(self, opt):
         try:
             from jinja2 import Environment, FileSystemLoader
         except Exception:
@@ -99,27 +96,49 @@ class GrowAutomationsStartUp(object):
         finally:
             from jinja2 import Environment, FileSystemLoader
 
-        POSTGRES_DB = input("[~] Data base name: ")
+        if opt == "0":
+            POSTGRES_DB = "pgrsDB"
+            POSTGRES_USER = "pgrsUSER"
+            POSTGRES_PASSWORD = self.random_str_generator()
+            POSTGRES_PORT = 5432
+            TOKEN = self.random_str_generator(40, string.ascii_uppercase + string.ascii_lowercase
+                                                                         + string.digits + ".-_")
+            BROKER_PORT = 1883
+            CONTROLLER_MQTT_USER = "miagiContr"
+            CONTROLLER_MQTT_PASSWORD = self.random_str_generator()
+            COM_MQTT_USER = "miagiCom"
+            COM_MQTT_PASSWORD = self.random_str_generator()
+            EH_MQTT_USER = "miagiEh"
+            EH_MQTT_PASSWORD = self.random_str_generator()
+            API_MQTT_USER = "miagiAPI"
+            API_MQTT_PASSWORD = self.random_str_generator()
 
-        POSTGRES_USER = input("[~] Data base user: ")
-        POSTGRES_PASSWORD = self.pwd_approver("[~] Data base password: ")
-        POSTGRES_PORT = self.port_approver(input("[~] Data base port: "), used_ports)
+            self.uiLogger.info("[!] Variable ypu may need in configurating systems!")
 
-        TOKEN = input("[~] API token: ")
+            self.uiLogger.info("  POSTGRES_DB: %s" % POSTGRES_DB)
+            self.uiLogger.info("  POSTGRES_USER: %s" % POSTGRES_USER)
+            self.uiLogger.info("  POSTGRES_PORT: %s" % POSTGRES_PORT)
+            self.uiLogger.info("  TOKEN: %s" % TOKEN)
+            self.uiLogger.info("  BROKER_PORT: %s\n" % BROKER_PORT)
 
-        BROKER_PORT = self.port_approver(input("[~] Broker port: "), used_ports)
+        else:
+            used_ports = ["5000", "80"]
+            used_usrs = []
 
-        CONTROLLER_MQTT_USER = self.usr_approver(input("[~] CONTROLLER MQTT USER: "), used_usrs)
-        CONTROLLER_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
-
-        COM_MQTT_USER = self.usr_approver(input("[~] COM MQTT USER: "), used_usrs)
-        COM_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
-
-        EH_MQTT_USER = self.usr_approver(input("[~] EH MQTT USER: "), used_usrs)
-        EH_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
-
-        API_MQTT_USER = self.usr_approver(input("[~] API MQTT USER: "), used_usrs)
-        API_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
+            POSTGRES_DB = input("[~] Data base name: ")
+            POSTGRES_USER = input("[~] Data base user: ")
+            POSTGRES_PASSWORD = self.pwd_approver("[~] Data base password: ")
+            POSTGRES_PORT = self.port_approver(input("[~] Data base port: "), used_ports)
+            TOKEN = input("[~] API token: ")
+            BROKER_PORT = self.port_approver(input("[~] Broker port: "), used_ports)
+            CONTROLLER_MQTT_USER = self.usr_approver(input("[~] CONTROLLER MQTT USER: "), used_usrs)
+            CONTROLLER_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
+            COM_MQTT_USER = self.usr_approver(input("[~] COM MQTT USER: "), used_usrs)
+            COM_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
+            EH_MQTT_USER = self.usr_approver(input("[~] EH MQTT USER: "), used_usrs)
+            EH_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
+            API_MQTT_USER = self.usr_approver(input("[~] API MQTT USER: "), used_usrs)
+            API_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
 
         file_loader = FileSystemLoader('templates')
         env = Environment(loader=file_loader)
@@ -136,7 +155,7 @@ class GrowAutomationsStartUp(object):
 
         with open(self.api_env_path, "w+") as f:
             f.write(env_api_content)
-            self.sysLogger.info("API environment created!")
+            self.sysLogger.info(" API environment created --> %s " % self.api_env_path)
 
         env_communication_service_tmp = env.get_template('env_communication_service_tmp.txt')
         env_com_content = env_communication_service_tmp.render(BROKER_PORT=BROKER_PORT,
@@ -151,7 +170,7 @@ class GrowAutomationsStartUp(object):
                                                                API_MQTT_PASSWORD=API_MQTT_PASSWORD)
         with open(self.communication_env_path, "w+") as f:
             f.write(env_com_content)
-            self.sysLogger.info("Communication service environment created!")
+            self.sysLogger.info(" Communication service environment created --> %s " % self.communication_env_path)
 
         access_control_list_tmp = env.get_template('access_control_list_tmp.txt')
         access_control_list_content = access_control_list_tmp.render(CONTROLLER_MQTT_USER=CONTROLLER_MQTT_USER,
@@ -161,14 +180,14 @@ class GrowAutomationsStartUp(object):
 
         with open(self.access_controll_list_path, "w+") as f:
             f.write(access_control_list_content)
-            self.sysLogger.info("Access controll list created!")
+            self.sysLogger.info(" Access controll list created --> %s " % self.access_controll_list_path)
 
         mosquitto_conf_tmp = env.get_template('mosquitto_conf_tmp.txt')
         mosquitto_conf_content = mosquitto_conf_tmp.render(BROKER_PORT=BROKER_PORT)
 
         with open(self.mosquitto_configs_path, "w+") as f:
             f.write(mosquitto_conf_content)
-            self.sysLogger.info("Mosquitto config file created!")
+            self.sysLogger.info(" Mosquitto config file created --> %s " % self.mosquitto_configs_path)
 
     def start(self):
         self.uiLogger.info("\n\n")
@@ -182,17 +201,18 @@ class GrowAutomationsStartUp(object):
                            "    dP****Yb `YbodP'   88    YbodP  88 YY 88 dP====Yb   88   88  YbodP  88  Y8 8bodP'")
 
         self.uiLogger.info("\n\n\n\n")
-        self.uiLogger.info("[*] Fill in configuration files\n")
+        self.uiLogger.info("[*] Please select option for configuration files creation:\n")
 
-        self.uiLogger.info("[0][*] Continue\n"
-                           "[1][*] Reject\n")
+        self.uiLogger.info("    [0][*] Auto (recommended)\n"
+                           "    [1][*] Manual\n"
+                           "    [2][*] Reject\n")
 
-        opt = input("[~] Choose option(0, 1): ")
+        opt = input("[~] Choose option(0, 1, 2): ")
         self.uiLogger.info("\n")
-        if opt in ["0", "1"]:
-            if opt == "0":
-                self.fill_env_files()
-            elif opt == "1":
+        if opt in ["0", "1", "2"]:
+            if opt == "0" or "1":
+                self.fill_env_files(opt)
+            elif opt == "2":
                 self.uiLogger.info("Process is rejected")
         else:
             self.uiLogger.info("[!] Bad option number choosen")
