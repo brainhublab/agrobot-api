@@ -13,15 +13,15 @@ class MqttClientSub(object):
     def __init__(self, listener=False):
         """ take the basic topic names from envoirnment file"""
         self.communicaton_service_client_id = os.environ.get("COMMUNICATION_SERVICE_CLIENT_ID")
-        self.new_controller_receave = os.environ.get("RECEAVE_NEW_CONTROLLER")
+        self.new_controller_receive = os.environ.get("RECEIVE_NEW_CONTROLLER")
 
-        self.controller_configs_receave = os.environ.get("CONTROLLER_CONFIGS") + "/receave"
+        self.controller_configs_receive = os.environ.get("CONTROLLER_CONFIGS") + "/receive"
         self.controller_configs_sent = os.environ.get("CONTROLLER_CONFIGS") + "/sent"
 
-        self.controller_data_receave = os.environ.get("CONTROLLER_DATA")
-        self.controller_logs_receave = os.environ.get("CONTROLLER_LOGS")
+        self.controller_data_receive = os.environ.get("CONTROLLER_DATA")
+        self.controller_logs_receive = os.environ.get("CONTROLLER_LOGS")
 
-        self.controller_rules_receave = os.environ.get("CONTROLLER_RULES") + "/receave"
+        self.controller_rules_receive = os.environ.get("CONTROLLER_RULES") + "/receive"
         self.controller_rules_sent = os.environ.get("CONTROLLER_RULES") + "/sent"
 
         self.api_config_update = os.environ.get("API_CONFIG_UPDATE")
@@ -74,10 +74,9 @@ class MqttClientSub(object):
     def __on_connect(self, client, userdata, flags, rc):
         self.connect = True
         if self.listener:
-            self.mqttc.subscribe(self.new_controller_receave)
-
-            self.mqttc.message_callback_add(self.new_controller_receave,
-                                            self.on_message_from_new_controller_receave)
+            self.mqttc.subscribe(self.new_controller_receive)
+            self.mqttc.message_callback_add(self.new_controller_receive,
+                                            self.on_message_from_new_controller_receive)
             while True:
                 try:
                     av_controllers_responce = LocalServerRequests().get_all_registered_controllers()
@@ -100,16 +99,16 @@ class MqttClientSub(object):
                     try:
                         """ Connected new config subscribers """
                         for sensor in sensors:
-                            log_sub = self.controller_logs_receave + "/" + client_id + "/" + sensor["id"]
-                            data_sub = self.controller_data_receave + "/" + client_id + "/" + sensor["id"]
+                            log_sub = self.controller_logs_receive + "/" + client_id + "/" + sensor["id"]
+                            data_sub = self.controller_data_receive + "/" + client_id + "/" + sensor["id"]
 
                             ctrl_client.subscribe(data_sub)
                             ctrl_client.subscribe(log_sub)
 
                             ctrl_client.message_callback_add(data_sub,
-                                                             self.on_message_from_controller_data_receave)
+                                                             self.on_message_from_controller_data_receive)
                             ctrl_client.message_callback_add(log_sub,
-                                                             self.on_message_from_controller_logs_receave)
+                                                             self.on_message_from_controller_logs_receive)
                     except Exception as e:
                         self.logger.critical(("\n[!][!] [--] [START LOADS FAIL]"
                                               "Fail to connect / disconnect subscriber.\nerr: {}\n").format(e))
@@ -117,21 +116,22 @@ class MqttClientSub(object):
 
     def __on_connect_controller_client(self, client, userdata, flags, rc):
         if self.listener:
+            """ client_id is MAC address of controller/sensor """
             client_id = client._client_id.decode()
 
-            """ Create tha required subscribers """
-            client.subscribe(self.controller_configs_receave + "/" + client_id)
-            client.subscribe(self.controller_rules_receave + "/" + client_id)
+            """ Create the required subscribers """
+            client.subscribe(self.controller_configs_receive + "/" + client_id)
+            client.subscribe(self.controller_rules_receive + "/" + client_id)
             client.subscribe(self.api_config_update + "/" + client_id)
             client.subscribe(self.api_obj_delete + "/" + client_id)
             client.subscribe(self.event_handler_rule + "/" + client_id)
 
-            client.message_callback_add(self.controller_configs_receave + "/" + client_id,
-                                        self.on_message_from_controller_configs_receave)
-            client.message_callback_add(self.controller_rules_receave + "/" + client_id,
-                                        self.on_message_from_controller_rules_receave)
+            client.message_callback_add(self.controller_configs_receive + "/" + client_id,
+                                        self.on_message_from_controller_configs_receive)
+            client.message_callback_add(self.controller_rules_receive + "/" + client_id,
+                                        self.on_message_from_controller_rules_receive)
             client.message_callback_add(self.api_config_update + "/" + client_id,
-                                        self.on_message_from_api_config_upgrade)
+                                        self.on_message_from_api_config_update)
             client.message_callback_add(self.api_obj_delete + "/" + client_id,
                                         self.on_message_from_api_obj_delete)
             client.message_callback_add(self.event_handler_rule + "/" + client_id,
@@ -146,7 +146,7 @@ class MqttClientSub(object):
     def on_message(self, client, userdata, msg):
         self.logger.info("\n[???] [{0}], [{1}] - [{2}]\n".format(client._client_id, msg.topic, msg.payload))
 
-    def on_message_from_new_controller_receave(self, client, userdata, msg):
+    def on_message_from_new_controller_receive(self, client, userdata, msg):
         """ Function handling new controller registration
                 - create mqtt client for new controller
                 - create controller object in API
@@ -170,7 +170,7 @@ class MqttClientSub(object):
                                  "Fail to create new client for controller. "
                                  "API status: {}\n").format(new_controller.status_code))
 
-    def on_message_from_api_config_upgrade(self, client, userdata, msg):
+    def on_message_from_api_config_update(self, client, userdata, msg):
         """ Function handling message from API for updated configs
                 - create new subscribers and kill old
                 - update controller object's subscribers topics in API (put req)
@@ -190,8 +190,8 @@ class MqttClientSub(object):
 
             """ Connected new config subscribers """
             for sensor in sensors:
-                log_sub = self.controller_logs_receave + "/" + client_id + "/" + sensor["id"]
-                data_sub = self.controller_data_receave + "/" + client_id + "/" + sensor["id"]
+                log_sub = self.controller_logs_receive + "/" + client_id + "/" + sensor["id"]
+                data_sub = self.controller_data_receive + "/" + client_id + "/" + sensor["id"]
                 new_subscribers.append(log_sub)
                 new_subscribers.append(data_sub)
 
@@ -199,9 +199,9 @@ class MqttClientSub(object):
                 client.subscribe(log_sub)
 
                 client.message_callback_add(data_sub,
-                                            self.on_message_from_controller_data_receave)
+                                            self.on_message_from_controller_data_receive)
                 client.message_callback_add(log_sub,
-                                            self.on_message_from_controller_logs_receave)
+                                            self.on_message_from_controller_logs_receive)
         except Exception as e:
             self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE] "
                                   "Fail to connect / disconnect subscriber.\nerr: {}\n").format(e))
@@ -222,7 +222,7 @@ class MqttClientSub(object):
                                      self.controller_configs_sent + "/" + client_id,
                                      json.dumps({"configs": data}))
                 except Exception as e:
-                    self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receave] "
+                    self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receive] "
                                           "Fail sent new config to Controller.\nerr: {}\n").format(e))
                 break
             else:
@@ -253,8 +253,8 @@ class MqttClientSub(object):
             if existed_subscribers:
                 for sub in existed_subscribers:
                     client.unsubscribe(sub)
-            client.unsubscribe(self.controller_configs_receave + "/" + client_id)
-            client.unsubscribe(self.controller_rules_receave + "/" + client_id)
+            client.unsubscribe(self.controller_configs_receive + "/" + client_id)
+            client.unsubscribe(self.controller_rules_receive + "/" + client_id)
             client.unsubscribe(self.api_config_update + "/" + client_id)
             client.unsubscribe(self.api_obj_delete + "/" + client_id)
             client.unsubscribe(self.event_handler_rule + "/" + client_id)
@@ -268,26 +268,26 @@ class MqttClientSub(object):
             self.logger.critical(("\n[!][!] [--] [DELETE CONTROLLER] "
                                   "Fail to disconnect client and subscribers.\nerr: {}\n").format(e))
 
-    def on_message_from_controller_configs_receave(self, client, userdata, msg):
+    def on_message_from_controller_configs_receive(self, client, userdata, msg):
         message = msg.payload.decode()
         pass
         # TODO: check what kind of message will come
 
-    def on_message_from_controller_rules_receave(self, client, userdata, msg):
+    def on_message_from_controller_rules_receive(self, client, userdata, msg):
         message = msg.payload.decode()
         pass
         # TODO: check what kind of message will come
 
-    def on_message_from_controller_data_receave(self, client, userdata, msg):
+    def on_message_from_controller_data_receive(self, client, userdata, msg):
         try:
             msg.payload
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE] " + client._client_id.decode()
             self._mqttPubMsg(client, self.event_handler_data, equipped_msg)
         except Exception as e:
-            self.logger.critical(("\n[!][!] [--] [CONTROLLER_DATA_RECEAVE][PUB] "
+            self.logger.critical(("\n[!][!] [--] [CONTROLLER_DATA_receive][PUB] "
                                  "Fail sent data to event_handler.\nerr: {}\n").format(e))
 
-    def on_message_from_controller_logs_receave(self, client, userdata, msg):
+    def on_message_from_controller_logs_receive(self, client, userdata, msg):
         self.logger.warning("\n[!][*] [{0}] [CONTROLLER LOG] [{1}]".format(client._client_id.decode(), msg.payload.decode()))
 
     # EVENT HANDLER CONNECTION CALLBACKS

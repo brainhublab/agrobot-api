@@ -6,7 +6,7 @@ COMMUNICATION_SERVICE_CLIENT_ID=CommunicatonServiceClient
 EVENT_HANDLER_CLIENT_ID=EventHandlerClient
 
 # controller topics
-RECEAVE_NEW_CONTROLLER=ControllerConfigs/receaveNewController
+RECEIVE_NEW_CONTROLLER=ControllerConfigs/receiveNewController
 CONTROLLER_CONFIGS=ControllerConfigs
 CONTROLLER_DATA=ControllerData
 CONTROLLER_LOGS=ControllerLogs
