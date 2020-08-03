@@ -4,18 +4,19 @@ ClientRegistrator --> subscribe --> (topic) ControllerConfigs/receiveNewControll
           ClientController/(MAC):
             /    action      /       topic                     /
             ----------------------------------------------------
-            -->  publishing --> ControllerConfigs/sent/(MAC)
+            -->  publishing --> ControllerConfigs/send/(MAC)
             -->  subscribe --> ControllerConfigs/receive/(MAC)
 
             -->  subscribe --> ApiConfigUpdate/(MAC)
             -->  subscribe --> ApiNewRule/(MAC)
+            -->  subscribe --> ApiObjDelete/(MAC)
 
-            -->  publishing --> ControllerRules/sent/(MAC)
+            -->  publishing --> ControllerRules/send/(MAC)
             -->  subscribe --> ControllersRules/receive/(MAC)
 
             -->  publishing --> EventHandler/data
             -->  subscribe --> EventHandler/rule/(MAC)
-            
+
             for sensor in controller:
                 /    action      /       topic                     /
                 ----------------------------------------------------

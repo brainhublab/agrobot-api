@@ -83,7 +83,7 @@ class MqttClientSub(object):
             self._mqttPubMsg(client, equipped_topic, data)
         except Exception as e:
             self.logger.critical(("\n[!][!] [--] [EVENT_HANDLER_RULE] [PUB] "
-                                  "Fail sent new config to Communication service's ctrl client.\nerr: {}\n").format(e))
+                                  "Fail send new config to Communication service's ctrl client.\nerr: {}\n").format(e))
 
     """                                UTILS                                 """
     def __on_log(self, client, userdata, level, buf):

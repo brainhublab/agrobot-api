@@ -74,7 +74,7 @@ class MqttClientSub(object):
         self.logger.debug("\n{0}\n".format(rc))
 
     def on_message_from_com_service(self, client, userdata, msg):
-        """ Resent ping message for new rule from API to controller """
+        """ Resend ping message for new rule from API to controller """
         self.logger.info("\n[*] [<--] [CONTROLLER][CS] New message come from Communication service.\n")
         try:
 

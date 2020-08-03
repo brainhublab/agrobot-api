@@ -16,13 +16,13 @@ class MqttClientSub(object):
         self.new_controller_receive = os.environ.get("RECEIVE_NEW_CONTROLLER")
 
         self.controller_configs_receive = os.environ.get("CONTROLLER_CONFIGS") + "/receive"
-        self.controller_configs_sent = os.environ.get("CONTROLLER_CONFIGS") + "/sent"
+        self.controller_configs_send = os.environ.get("CONTROLLER_CONFIGS") + "/send"
 
         self.controller_data_receive = os.environ.get("CONTROLLER_DATA")
         self.controller_logs_receive = os.environ.get("CONTROLLER_LOGS")
 
         self.controller_rules_receive = os.environ.get("CONTROLLER_RULES") + "/receive"
-        self.controller_rules_sent = os.environ.get("CONTROLLER_RULES") + "/sent"
+        self.controller_rules_send = os.environ.get("CONTROLLER_RULES") + "/send"
 
         self.api_config_update = os.environ.get("API_CONFIG_UPDATE")
         self.api_new_rule = os.environ.get("API_NEW_RULE")
@@ -216,14 +216,14 @@ class MqttClientSub(object):
                 continue
 
             if update_subscribers.status_code == 200:
-                """ sent new configs to controller """
+                """ send new configs to controller """
                 try:
                     self._mqttPubMsg(client,
-                                     self.controller_configs_sent + "/" + client_id,
+                                     self.controller_configs_send + "/" + client_id,
                                      json.dumps({"configs": data}))
                 except Exception as e:
                     self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receive] "
-                                          "Fail sent new config to Controller.\nerr: {}\n").format(e))
+                                          "Fail send new config to Controller.\nerr: {}\n").format(e))
                 break
             else:
                 sleep(1)
@@ -247,7 +247,7 @@ class MqttClientSub(object):
 
         try:
             self._mqttPubMsg(client,
-                             self.controller_configs_sent + "/" + client_id,
+                             self.controller_configs_send + "/" + client_id,
                              json.dumps({"configs": data}))
             """ Disconnect all subscribers on this client """
             if existed_subscribers:
@@ -285,7 +285,7 @@ class MqttClientSub(object):
             self._mqttPubMsg(client, self.event_handler_data, equipped_msg)
         except Exception as e:
             self.logger.critical(("\n[!][!] [--] [CONTROLLER_DATA_receive][PUB] "
-                                 "Fail sent data to event_handler.\nerr: {}\n").format(e))
+                                 "Fail send data to event_handler.\nerr: {}\n").format(e))
 
     def on_message_from_controller_logs_receive(self, client, userdata, msg):
         self.logger.warning("\n[!][*] [{0}] [CONTROLLER LOG] [{1}]".format(client._client_id.decode(), msg.payload.decode()))
@@ -294,12 +294,12 @@ class MqttClientSub(object):
     def on_message_from_event_handler_rule(self, client, userdata, msg):
         message = msg.payload.decode() + " [COMMUNICATION_SERVICE]"
         try:
-            equipped_topic = self.controller_rules_sent + "/" + client._client_id.decode()
+            equipped_topic = self.controller_rules_send + "/" + client._client_id.decode()
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
             self._mqttPubMsg(client, equipped_topic, equipped_msg)
         except Exception as e:
             self.logger.critical(("\n[!][!] [--] [EVENT_HANDLER_RULE][PUB] "
-                                  "Fail sent new rule to Controller.\nerr: {}\n").format(e))
+                                  "Fail send new rule to Controller.\nerr: {}\n").format(e))
 
     """                                UTILS                                 """
     def __on_log(self, client, userdata, level, buf):

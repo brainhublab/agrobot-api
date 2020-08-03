@@ -1,17 +1,17 @@
 user miagiContr
 topic write ControllerConfigs/receiveNewController
-topic read ControllerConfigs/sent/#
+topic read ControllerConfigs/send/#
 topic write ControllerConfigs/receive/#
-topic read ControllerRules/sent/#
+topic read ControllerRules/send/#
 topic write ControllerRules/#
 topic write ControllerData/#
 topic write ControllerLogs/#
 
 user miagiCom
 topic read ControllerConfigs/receiveNewController
-topic write ControllerConfigs/sent/#
+topic write ControllerConfigs/send/#
 topic read ControllerConfigs/receive/#
-topic write ControllerRules/sent/#
+topic write ControllerRules/send/#
 topic read ControllerRules/receive/#
 topic read ControllerData/#
 topic read ControllerLogs/#
