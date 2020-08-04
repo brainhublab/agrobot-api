@@ -18,6 +18,10 @@ if ( [ -z "${API_MQTT_USER}" ] || [ -z "${API_MQTT_PASSWORD}" ] ); then
   echo "Missing API user or password not defined"
   exit 1
 fi
+if ( [ -z "${UI_MQTT_USER}" ] || [ -z "${UI_MQTT_PASSWORD}" ] ); then
+  echo "Missing UI user or password not defined"
+  exit 1
+fi
 
 # create mosquitto passwordfile
 touch passwordfile
@@ -29,6 +33,7 @@ mosquitto_passwd -b passwordfile $EH_MQTT_USER $EH_MQTT_PASSWORD
 echo "=======>> EH_MQTT_USER EH_MQTT_PASSWORD defined"
 mosquitto_passwd -b passwordfile $API_MQTT_USER $API_MQTT_PASSWORD
 echo "=======>> API_MQTT_USER API_MQTT_PASSWORD defined"
+mosquitto_passwd -b passwordfile $UI_MQTT_USER $UI_MQTT_PASSWORD
+echo "=======>> UI_MQTT_USER UI_MQTT_PASSWORD defined"
 
 exec "$@"
-

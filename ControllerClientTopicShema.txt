@@ -1,4 +1,5 @@
 ClientRegistrator --> subscribe --> (topic) ControllerConfigs/receiveNewController
+                  --> publishing --> (topic) UI/receiveNewController
     => on_message =>
         create:
           ClientController/(MAC):

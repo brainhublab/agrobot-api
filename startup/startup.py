@@ -112,6 +112,8 @@ class GrowAutomationsStartUp(object):
             EH_MQTT_PASSWORD = self.random_str_generator()
             API_MQTT_USER = "miagiAPI"
             API_MQTT_PASSWORD = self.random_str_generator()
+            UI_MQTT_USER = "miagiUI"
+            UI_MQTT_PASSWORD = self.random_str_generator()
 
             self.uiLogger.info("[!] Variable ypu may need in configurating systems!")
 
@@ -139,6 +141,8 @@ class GrowAutomationsStartUp(object):
             EH_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
             API_MQTT_USER = self.usr_approver(input("[~] API MQTT USER: "), used_usrs)
             API_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
+            UI_MQTT_USER = self.usr_approver(input("[~] UI MQTT USER: "), used_usrs)
+            UI_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
 
         file_loader = FileSystemLoader('templates')
         env = Environment(loader=file_loader)
@@ -167,7 +171,9 @@ class GrowAutomationsStartUp(object):
                                                                EH_MQTT_USER=EH_MQTT_USER,
                                                                EH_MQTT_PASSWORD=EH_MQTT_PASSWORD,
                                                                API_MQTT_USER=API_MQTT_USER,
-                                                               API_MQTT_PASSWORD=API_MQTT_PASSWORD)
+                                                               API_MQTT_PASSWORD=API_MQTT_PASSWORD,
+                                                               UI_MQTT_USER=UI_MQTT_USER,
+                                                               UI_MQTT_PASSWORD=UI_MQTT_PASSWORD)
         with open(self.communication_env_path, "w+") as f:
             f.write(env_com_content)
             self.sysLogger.info(" Communication service environment created --> %s " % self.communication_env_path)
@@ -176,7 +182,8 @@ class GrowAutomationsStartUp(object):
         access_control_list_content = access_control_list_tmp.render(CONTROLLER_MQTT_USER=CONTROLLER_MQTT_USER,
                                                                      COM_MQTT_USER=COM_MQTT_USER,
                                                                      EH_MQTT_USER=EH_MQTT_USER,
-                                                                     API_MQTT_USER=API_MQTT_USER)
+                                                                     API_MQTT_USER=API_MQTT_USER,
+                                                                     UI_MQTT_USER=UI_MQTT_USER)
 
         with open(self.access_controll_list_path, "w+") as f:
             f.write(access_control_list_content)

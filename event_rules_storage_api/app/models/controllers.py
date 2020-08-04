@@ -17,8 +17,7 @@ class Controller(db.Model):
     created_on = db.Column(db.DateTime, default=func.now())
     updated_on = db.Column(db.DateTime, onupdate=datetime.datetime.now)
 
-    # created_on = db.Column(db.DateTime, server_default=db.func.now())
-    # updated_on = db.Column(db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now())
+    child_rules = db.relationship("Rule", cascade="all,delete", backref="controllers")
 
     def toDict(self):
         data = {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

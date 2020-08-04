@@ -31,6 +31,8 @@ class MqttClientSub(object):
         self.event_handler_data = os.environ.get("EVENT_HANDLER_DATA")
         self.event_handler_rule = os.environ.get("EVENT_HANDLER_RULE")
 
+        self.ui_new_controller_received = os.environ.get("UI_NEW_CONTROLLER_RECEIVED")
+
         self.com_user = os.environ.get("COM_MQTT_USER")
         self.com_pwd = os.environ.get("COM_MQTT_PASSWORD")
 
@@ -164,6 +166,8 @@ class MqttClientSub(object):
                                   "Fail create new controller on API.\nerr: {}\n").format(e))
 
         if new_controller.status_code == 201:
+            """ send message to UI mqtt client with data of new controller """
+            self._mqttPubMsg(client, self.ui_new_controller_received, new_controller.content)
             self.__bootstrap_mqtt_controller_client(macAddr)
         else:
             self.logger.warning(("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] "
