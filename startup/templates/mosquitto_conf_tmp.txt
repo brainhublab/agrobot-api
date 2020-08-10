@@ -8,6 +8,9 @@ acl_file /access_control_list.acl
 # Port to use for the default listener.
 port {{ BROKER_PORT }}
 
+listener 9001
+protocol websockets
+
 log_dest file /mosquitto/log/mosquitto.log
 log_dest stdout
 

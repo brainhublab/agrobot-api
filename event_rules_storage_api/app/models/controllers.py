@@ -11,8 +11,7 @@ class Controller(db.Model):
     mac_addr = db.Column(db.Text(), unique=True)
     name = db.Column(db.String(100))
     description = db.Column(db.Text())
-    pins_configuration = db.Column(db.JSON)
-    subscribers = db.Column(db.ARRAY(db.Text()))
+    configuration = db.Column(db.JSON)
 
     created_on = db.Column(db.DateTime, default=func.now())
     updated_on = db.Column(db.DateTime, onupdate=datetime.datetime.now)

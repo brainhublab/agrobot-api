@@ -27,10 +27,10 @@ parser_post.add_argument("description",
                          location="json",
                          type=str,
                          help="Description field cannot be blank ")
-parser_post.add_argument("pins_configuration", required=True,
+parser_post.add_argument("configuration", required=True,
                          location="json",
                          type=dict,
-                         help="pins_configuration dict is required!")
+                         help="configuration dict is required!")
 
 parser_put = parser.copy()
 parser_put.add_argument("name",
@@ -43,35 +43,10 @@ parser_put.add_argument("description",
                         location="json",
                         type=str,
                         help="Description field cannot be blank ")
-parser_put.add_argument("pins_configuration", required=True,
+parser_put.add_argument("configuration", required=True,
                         location="json",
                         type=dict,
-                        help="pins_configuration dict is required!")
-
-parser_put_subs = parser.copy()
-parser_put_subs.add_argument("subscribers",
-                             required=True,
-                             location="json",
-                             type=list,
-                             help="subscribers cannot be empty list")
-
-
-class ControllerAuth(Resource):
-    @auth_check
-    def put(self, mac_addr):
-        args = parser_put_subs.parse_args()
-        controller = Controller.query.filter_by(mac_addr=mac_addr).first()
-        if not controller:
-            return {
-                "message": "Controller not found!"
-            }, 404
-
-        controller.subscribers = args["subscribers"]
-        db.session.commit()
-        return controller.toDict(), 200
-
-
-api.add_resource(ControllerAuth, "/api/controllers/subscribers/<mac_addr>/")
+                        help="configuration dict is required!")
 
 
 class Controllers(Resource):
@@ -93,8 +68,7 @@ class Controllers(Resource):
             name=args["name"],
             mac_addr=args["mac_addr"],
             description=args["description"],
-            pins_configuration=args["pins_configuration"],
-            subscribers=[]
+            configuration=args["configuration"],
         )
         db.session.add(new_controller)
 
@@ -125,7 +99,7 @@ class CControllers(Resource):
         if is_there_an_object(controller_to_update):
             controller_to_update.name = args["name"],
             controller_to_update.description = args["description"],
-            controller_to_update.pins_configuration = args["pins_configuration"]
+            controller_to_update.configuration = args["configuration"]
             db.session.commit()
             new_data = controller_to_update.toDict()
             try:
@@ -144,11 +118,8 @@ class CControllers(Resource):
         controller = Controller.query.filter_by(id=id).first()
         if controller:
             """ Send delete instruction to communication service """
-
             data = controller.toDict()
-            data_to_send = {"subscribers": data["subscribers"],
-                            "mac_addr": data["mac_addr"]
-                            }
+            data_to_send = {"mac_addr": data["mac_addr"]}
             try:
                 topic = app.config["API_OBJ_DELETE"] + "/" + data_to_send["mac_addr"]
                 MqttClientPub().bootstrap_mqtt().pub(topic, json.dumps(data_to_send))

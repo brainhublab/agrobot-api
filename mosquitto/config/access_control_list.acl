@@ -21,6 +21,8 @@ topic read ApiNewRule/#
 topic read ApiConfigUpdate/#
 topic read ApiObjDelete/#
 topic write UI/receiveNewController
+topic write UI/ControllerData/#
+topic write UI/ControllerLogs/#
 
 user miagiEh
 topic read EventHandler/data
@@ -33,3 +35,5 @@ topic write ApiObjDelete/#
 
 user miagiUI
 topic read UI/receiveNewController
+topic read UI/ControllerData/#
+topic read UI/ControllerLogs/#

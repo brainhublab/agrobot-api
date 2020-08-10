@@ -2,7 +2,7 @@ ClientRegistrator --> subscribe --> (topic) ControllerConfigs/receiveNewControll
                   --> publishing --> (topic) UI/receiveNewController
     => on_message =>
         create:
-          ClientController/(MAC):
+          ClientController - MAC:
             /    action      /       topic                     /
             ----------------------------------------------------
             -->  publishing --> ControllerConfigs/send/(MAC)
@@ -18,8 +18,16 @@ ClientRegistrator --> subscribe --> (topic) ControllerConfigs/receiveNewControll
             -->  publishing --> EventHandler/data
             -->  subscribe --> EventHandler/rule/(MAC)
 
-            for sensor in controller:
-                /    action      /       topic                     /
-                ----------------------------------------------------
-                -->  subscribe --> ControllerData/(MAC)/(sensor_id)
-                -->  subscribe --> ControllerLogs/(MAC)/(sensor_id)
+            -->  subscribe --> ControllerData/(MAC)
+            -->  subscribe --> ControllerLogs/(MAC)
+
+          ClientControllerWebSocket - 'w' + MAC:
+            /    action      /       topic                     /
+            ----------------------------------------------------
+
+            -->  subscribe --> ControllerData/(MAC)
+            -->  subscribe --> ControllerLogs/(MAC)
+            -->  subscribe --> ApiObjDelete/(MAC)
+
+            -->  publishing --> UI/ControllerData/(MAC)
+            -->  publishing --> UI/ControllerLogs/(MAC)

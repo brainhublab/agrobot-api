@@ -53,10 +53,13 @@ services:
       container_name: mosquitto
       expose:
         - "${BROKER_PORT}"
+        - 9001
       env_file:
         - '.env-communication-service'
       ports:
         - "${BROKER_PORT}:${BROKER_PORT}"
+        - 9001:9001
+
       depends_on:
         - event_rules_storage_api
       networks:

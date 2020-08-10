@@ -32,6 +32,8 @@ class MqttClientSub(object):
         self.event_handler_rule = os.environ.get("EVENT_HANDLER_RULE")
 
         self.ui_new_controller_received = os.environ.get("UI_NEW_CONTROLLER_RECEIVED")
+        self.ui_ctrl_data = os.environ.get("UI_CONTROLLER_DATA")
+        self.ui_ctrl_logs = os.environ.get("UI_CONTROLLER_LOGS")
 
         self.com_user = os.environ.get("COM_MQTT_USER")
         self.com_pwd = os.environ.get("COM_MQTT_PASSWORD")
@@ -95,25 +97,10 @@ class MqttClientSub(object):
 
             for controller_data in av_controllers:
                 client_id = controller_data["mac_addr"]
-                ctrl_client = self.__bootstrap_mqtt_controller_client(client_id)
-                if "sensors" in controller_data["pins_configuration"]:
-                    sensors = controller_data["pins_configuration"]["sensors"]
-                    try:
-                        """ Connected new config subscribers """
-                        for sensor in sensors:
-                            log_sub = self.controller_logs_receive + "/" + client_id + "/" + sensor["id"]
-                            data_sub = self.controller_data_receive + "/" + client_id + "/" + sensor["id"]
-
-                            ctrl_client.subscribe(data_sub)
-                            ctrl_client.subscribe(log_sub)
-
-                            ctrl_client.message_callback_add(data_sub,
-                                                             self.on_message_from_controller_data_receive)
-                            ctrl_client.message_callback_add(log_sub,
-                                                             self.on_message_from_controller_logs_receive)
-                    except Exception as e:
-                        self.logger.critical(("\n[!][!] [--] [START LOADS FAIL]"
-                                              "Fail to connect / disconnect subscriber.\nerr: {}\n").format(e))
+                self.__bootstrap_mqtt_controller_client(client_id)
+                websocket_cli = self.__bootstrap_mqtt_over_websocket_ctrl_cli("w" + client_id)
+                """ send message with new controller data to UI mqtt client """
+                self._mqttPubMsg(websocket_cli, self.ui_new_controller_received, json.dumps(controller_data))
         self.logger.debug("\n{0}\n".format(rc))
 
     def __on_connect_controller_client(self, client, userdata, flags, rc):
@@ -127,6 +114,8 @@ class MqttClientSub(object):
             client.subscribe(self.api_config_update + "/" + client_id)
             client.subscribe(self.api_obj_delete + "/" + client_id)
             client.subscribe(self.event_handler_rule + "/" + client_id)
+            client.subscribe(self.controller_logs_receive + "/" + client_id)
+            client.subscribe(self.controller_data_receive + "/" + client_id)
 
             client.message_callback_add(self.controller_configs_receive + "/" + client_id,
                                         self.on_message_from_controller_configs_receive)
@@ -138,12 +127,31 @@ class MqttClientSub(object):
                                         self.on_message_from_api_obj_delete)
             client.message_callback_add(self.event_handler_rule + "/" + client_id,
                                         self.on_message_from_event_handler_rule)
+            client.message_callback_add(self.controller_data_receive + "/" + client_id,
+                                        self.on_message_from_controller_data_receive)
+            client.message_callback_add(self.controller_logs_receive + "/" + client_id,
+                                        self.on_message_from_controller_logs_receive)
+        self.logger.debug("\n{0}\n".format(rc))
+
+    def __on_connect_ctrl_cli_for_web(self, client, userdata, flags, rc):
+        if self.listener:
+            """ client_id is MAC address of controller/sensor """
+            client_id = client._client_id.decode()
+
+            """ Create the required subscribers """
+            client.subscribe(self.controller_logs_receive + "/" + client_id[1:])
+            client.subscribe(self.controller_data_receive + "/" + client_id[1:])
+            client.subscribe(self.api_obj_delete + "/" + client_id[1:])
+
+            client.message_callback_add(self.controller_logs_receive + "/" + client_id[1:],
+                                        self.on_message_ctrl_log_websocket_cli)
+            client.message_callback_add(self.controller_data_receive + "/" + client_id[1:],
+                                        self.on_message_ctrl_data_websocket_cli)
+            client.message_callback_add(self.api_obj_delete + "/" + client_id[1:],
+                                        self.on_message_obj_del_websocket_cli)
         self.logger.debug("\n{0}\n".format(rc))
 
     """                              CALLBACKS                               """
-    """ All function names are created from two parts:
-            'on_message_from' - show action type,
-            second part - show name of topic variable """
     # CONTROLLER CONNECTION CALLBACKS
     def on_message(self, client, userdata, msg):
         self.logger.info("\n[???] [{0}], [{1}] - [{2}]\n".format(client._client_id, msg.topic, msg.payload))
@@ -159,111 +167,46 @@ class MqttClientSub(object):
             post_data["name"] = ""
             post_data["description"] = ""
             post_data["mac_addr"] = macAddr
-            post_data["pins_configuration"] = {}
+            post_data["configuration"] = {}
             new_controller = LocalServerRequests(data=post_data).post_new_controller()
+
+            if new_controller.status_code == 201:
+                self.__bootstrap_mqtt_controller_client(macAddr)
+                websocket_cli = self.__bootstrap_mqtt_over_websocket_ctrl_cli("w" + macAddr)
+                """ send message with new controller data to UI mqtt client """
+                self._mqttPubMsg(websocket_cli, self.ui_new_controller_received, new_controller.content)
+
         except Exception as e:
             self.logger.critical(("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] "
-                                  "Fail create new controller on API.\nerr: {}\n").format(e))
-
-        if new_controller.status_code == 201:
-            """ send message to UI mqtt client with data of new controller """
-            self._mqttPubMsg(client, self.ui_new_controller_received, new_controller.content)
-            self.__bootstrap_mqtt_controller_client(macAddr)
-        else:
-            self.logger.warning(("\n[!][!] [--] [NEW_CONTROLLER_CONFIG] "
-                                 "Fail to create new client for controller. "
-                                 "API status: {}\n").format(new_controller.status_code))
+                                  "Fail to create new controller\nerr: {}\n").format(e))
 
     def on_message_from_api_config_update(self, client, userdata, msg):
         """ Function handling message from API for updated configs
-                - create new subscribers and kill old
-                - update controller object's subscribers topics in API (put req)
                 - publish new configs
         """
         client_id = client._client_id.decode()
         data = json.loads(msg.payload.decode())
-        existed_subscribers = data["subscribers"]
-        sensors = data["pins_configuration"]["sensors"]
-        new_subscribers = []
-
-        try:
-            if existed_subscribers:
-                """ Disconnect old subscribers """
-                for sub in existed_subscribers:
-                    client.unsubscribe(sub)
-
-            """ Connected new config subscribers """
-            for sensor in sensors:
-                log_sub = self.controller_logs_receive + "/" + client_id + "/" + sensor["id"]
-                data_sub = self.controller_data_receive + "/" + client_id + "/" + sensor["id"]
-                new_subscribers.append(log_sub)
-                new_subscribers.append(data_sub)
-
-                client.subscribe(data_sub)
-                client.subscribe(log_sub)
-
-                client.message_callback_add(data_sub,
-                                            self.on_message_from_controller_data_receive)
-                client.message_callback_add(log_sub,
-                                            self.on_message_from_controller_logs_receive)
-        except Exception as e:
-            self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE] "
-                                  "Fail to connect / disconnect subscriber.\nerr: {}\n").format(e))
-
-        while True:
-            try:
-                """ Update subscribers in db """
-                update_subscribers = LocalServerRequests(mac_addr=client_id,
-                                                         data={"subscribers": new_subscribers}).put_subscribers_by_mac()
-            except Exception as e:
-                self.logger.info("\n[!][!] [Request error] [Retraing after 1s]\nerr: {}\n".format(e))
-                continue
-
-            if update_subscribers.status_code == 200:
-                """ send new configs to controller """
-                try:
-                    self._mqttPubMsg(client,
-                                     self.controller_configs_send + "/" + client_id,
-                                     json.dumps({"configs": data}))
-                except Exception as e:
-                    self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receive] "
-                                          "Fail send new config to Controller.\nerr: {}\n").format(e))
-                break
-            else:
-                sleep(1)
-
-    def on_message_from_api_obj_delete(self, client, userdata, msg):
-        """ Function handling message from API for updated configs
-                - disconnect all client subscribers
-                - disconnect client
-        """
-        client_id = client._client_id.decode()
-        data = json.loads(msg.payload.decode())
-        existed_subscribers = data["subscribers"]
-        try:
-            if existed_subscribers:
-                """ Disconnect old subscribers """
-                for sub in existed_subscribers:
-                    client.unsubscribe(sub)
-        except Exception as e:
-            self.logger.critical(("\n[!][!] [--] [API_OBJ_DELTE] "
-                                  "Fail to  disconnect subscriber.\nerr: {}\n").format(e))
 
         try:
             self._mqttPubMsg(client,
                              self.controller_configs_send + "/" + client_id,
                              json.dumps({"configs": data}))
-            """ Disconnect all subscribers on this client """
-            if existed_subscribers:
-                for sub in existed_subscribers:
-                    client.unsubscribe(sub)
-            client.unsubscribe(self.controller_configs_receive + "/" + client_id)
-            client.unsubscribe(self.controller_rules_receive + "/" + client_id)
-            client.unsubscribe(self.api_config_update + "/" + client_id)
-            client.unsubscribe(self.api_obj_delete + "/" + client_id)
-            client.unsubscribe(self.event_handler_rule + "/" + client_id)
+        except Exception as e:
+            self.logger.critical(("\n[!][!] [--] [API_CONFIG_UPDATE][receive] "
+                                  "Fail send new config to Controller.\nerr: {}\n").format(e))
 
-            """ Disconnect controller client and remove from client references list"""
+    def on_message_from_api_obj_delete(self, client, userdata, msg):
+        """ Function handling API message for deleted object
+                - disconnect all clients and subscribers related with object
+        """
+        client_id = client._client_id.decode()
+        try:
+            sub_topics = [self.controller_configs_receive, self.controller_rules_receive,
+                          self.api_config_update, self.api_obj_delete, self.event_handler_rule]
+            for topic in sub_topics:
+                client.unsubscribe(topic + "/" + client_id)
+
+            """ Disconnect controller client and remove from client references list """
             if client in self.ctrl_clients_refs:
                 self.ctrl_clients_refs.remove(client)
             client.disconnect()
@@ -296,7 +239,6 @@ class MqttClientSub(object):
 
     # EVENT HANDLER CONNECTION CALLBACKS
     def on_message_from_event_handler_rule(self, client, userdata, msg):
-        message = msg.payload.decode() + " [COMMUNICATION_SERVICE]"
         try:
             equipped_topic = self.controller_rules_send + "/" + client._client_id.decode()
             equipped_msg = msg.payload.decode() + " [COMMUNICATION_SERVICE]" + " " + client._client_id.decode()
@@ -304,6 +246,41 @@ class MqttClientSub(object):
         except Exception as e:
             self.logger.critical(("\n[!][!] [--] [EVENT_HANDLER_RULE][PUB] "
                                   "Fail send new rule to Controller.\nerr: {}\n").format(e))
+
+    # WEBSOCKET CLIENT CALLBACKS
+    def on_message_ctrl_data_websocket_cli(self, client, userdata, msg):
+        try:
+            self._mqttPubMsg(client, self.ui_ctrl_data, msg.payload.decode())
+        except Exception as e:
+            self.logger.critical(("Fail send new data to UI.\nerr: {}\n").format(e))
+
+    def on_message_ctrl_log_websocket_cli(self, client, userdata, msg):
+        try:
+            self._mqttPubMsg(client, self.ui_ctrl_logs + client._client_id.decode()[1:], msg.payload.decode())
+        except Exception as e:
+            self.logger.critical(("Fail send new log to UI.\nerr: {}\n").format(e))
+
+    def on_message_obj_del_websocket_cli(self, client, userdata, msg):
+        """ Function handling API message for deleted object
+                - disconnect all websocket clients and subscribers
+        """
+        client_id = client._client_id.decode()
+        try:
+
+            sub_topics = [self.controller_logs_receive, self.controller_data_receive,
+                          self.api_obj_delete]
+            for topic in sub_topics:
+                client.unsubscribe(topic + "/" + client_id[1:])
+
+            """ Disconnect controller client and remove from client references list"""
+            if client in self.ctrl_clients_refs:
+                self.ctrl_clients_refs.remove(client)
+            client.disconnect()
+            client.loop_stop()
+
+        except Exception as e:
+            self.logger.critical(("\n[!][!] [--] [DELETE CONTROLLER] "
+                                  "Fail to disconnect client and subscribers.\nerr: {}\n").format(e))
 
     """                                UTILS                                 """
     def __on_log(self, client, userdata, level, buf):
@@ -324,6 +301,20 @@ class MqttClientSub(object):
         mqtt_controller_cli.on_log = self.__on_log
         mqtt_controller_cli.on_disconnect = self.on_disconnect
         result_of_connection = mqtt_controller_cli.connect(self.broker_url, self.broker_port, keepalive=120)
+        self.ctrl_clients_refs.append(mqtt_controller_cli)
+        if result_of_connection == 0:
+            mqtt_controller_cli.loop_start()
+        return mqtt_controller_cli
+
+    def __bootstrap_mqtt_over_websocket_ctrl_cli(self, client_id):
+        mqtt_controller_cli = paho.Client(client_id=client_id, clean_session=False,
+                                          protocol=paho.MQTTv311, transport='websockets')
+        self._broker_auth(mqtt_controller_cli)
+        mqtt_controller_cli.on_connect = self.__on_connect_ctrl_cli_for_web
+        mqtt_controller_cli.on_message = self.on_message
+        mqtt_controller_cli.on_log = self.__on_log
+        mqtt_controller_cli.on_disconnect = self.on_disconnect
+        result_of_connection = mqtt_controller_cli.connect(self.broker_url, 9001, keepalive=120)
         self.ctrl_clients_refs.append(mqtt_controller_cli)
         if result_of_connection == 0:
             mqtt_controller_cli.loop_start()
