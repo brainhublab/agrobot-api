@@ -167,7 +167,8 @@ class MqttClientSub(object):
             post_data["name"] = ""
             post_data["description"] = ""
             post_data["mac_addr"] = macAddr
-            post_data["configuration"] = {}
+            post_data["graph"] = {}
+            post_data["esp_config"] = {}
             new_controller = LocalServerRequests(data=post_data).post_new_controller()
 
             if new_controller.status_code == 201:

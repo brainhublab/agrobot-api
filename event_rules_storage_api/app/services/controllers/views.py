@@ -27,10 +27,14 @@ parser_post.add_argument("description",
                          location="json",
                          type=str,
                          help="Description field cannot be blank ")
-parser_post.add_argument("configuration", required=True,
+parser_post.add_argument("graph", required=True,
                          location="json",
                          type=dict,
-                         help="configuration dict is required!")
+                         help="graph dict is required!")
+parser_post.add_argument("esp_config", required=True,
+                         location="json",
+                         type=dict,
+                         help="esp_config dict is required!")
 
 parser_put = parser.copy()
 parser_put.add_argument("name",
@@ -43,10 +47,14 @@ parser_put.add_argument("description",
                         location="json",
                         type=str,
                         help="Description field cannot be blank ")
-parser_put.add_argument("configuration", required=True,
+parser_put.add_argument("graph", required=True,
                         location="json",
                         type=dict,
-                        help="configuration dict is required!")
+                        help="graph dict is required!")
+parser_put.add_argument("esp_config", required=True,
+                        location="json",
+                        type=dict,
+                        help="esp_config dict is required!")
 
 
 class Controllers(Resource):
@@ -68,7 +76,8 @@ class Controllers(Resource):
             name=args["name"],
             mac_addr=args["mac_addr"],
             description=args["description"],
-            configuration=args["configuration"],
+            graph=args["graph"],
+            esp_config=args["esp_config"],
         )
         db.session.add(new_controller)
 
@@ -99,7 +108,8 @@ class CControllers(Resource):
         if is_there_an_object(controller_to_update):
             controller_to_update.name = args["name"],
             controller_to_update.description = args["description"],
-            controller_to_update.configuration = args["configuration"]
+            controller_to_update.graph = args["graph"]
+            controller_to_update.esp_config = args["esp_config"]
             db.session.commit()
             new_data = controller_to_update.toDict()
             try:
