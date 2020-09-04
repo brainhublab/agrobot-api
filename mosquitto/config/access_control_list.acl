@@ -1,5 +1,5 @@
 user miagiContr
-topic write ControllerConfigs/receiveNewController
+topic write ControllerConfigs/auth
 topic read ControllerConfigs/send/#
 topic write ControllerConfigs/receive/#
 topic read ControllerRules/send/#
@@ -8,7 +8,7 @@ topic write ControllerData/#
 topic write ControllerLogs/#
 
 user miagiCom
-topic read ControllerConfigs/receiveNewController
+topic read ControllerConfigs/auth
 topic write ControllerConfigs/send/#
 topic read ControllerConfigs/receive/#
 topic write ControllerRules/send/#

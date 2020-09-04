@@ -16,7 +16,6 @@ def create_app(config_name):
     app.config.from_object(app_config[config_name])
     app.config.from_pyfile('config.py')
     db.init_app(app)
-
     # A Flask extension for handling Cross Origin Resource Sharing (CORS),
     # making cross-origin AJAX possible.
     # official documentation: https://flask-cors.readthedocs.io/en/latest/
@@ -37,5 +36,8 @@ def create_app(config_name):
 
     from .services.controllers import controllers as controllers_blueprint
     app.register_blueprint(controllers_blueprint)
+
+    from .services.data import data as data_blueprint
+    app.register_blueprint(data_blueprint)
 
     return app

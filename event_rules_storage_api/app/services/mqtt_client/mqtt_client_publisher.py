@@ -72,8 +72,8 @@ class MqttClientPub(object):
             try:
                 self.mqttc.loop_start()
                 self.mqttc.publish(topic, data, qos=1)
-                self.mqttc.loop_stop()
                 self.mqttc.disconnect()
+                self.mqttc.loop_stop()
                 break
             except Exception as e:
                 self.logger.critical("\n[!] [Cаnnot send data]!!\n")

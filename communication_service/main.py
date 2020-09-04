@@ -1,5 +1,4 @@
-from mqtt_services.mqtt_query_subscriber import MqttClientSub
+from mqtt_services.mqtt_master_client import MqttMasterClient
 
-mqttRawDataSub = MqttClientSub
-mqttRawDataSub(listener=True).bootstrap_mqtt().start()
-
+mqttMaster = MqttMasterClient
+mqttMaster(listener=True).bootstrap_mqtt().start()

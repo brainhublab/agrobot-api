@@ -113,7 +113,7 @@ class CControllers(Resource):
             db.session.commit()
             new_data = controller_to_update.toDict()
             try:
-                topic = app.config["API_CONFIG_UPDATE"] + "/" + new_data["mac_addr"]
+                topic = app.config["API_CONFIG_UPDATE"] + new_data["mac_addr"]
                 MqttClientPub().bootstrap_mqtt().pub(topic, json.dumps(new_data))
             except Exception as e:
                 print(e)
@@ -131,7 +131,8 @@ class CControllers(Resource):
             data = controller.toDict()
             data_to_send = {"mac_addr": data["mac_addr"]}
             try:
-                topic = app.config["API_OBJ_DELETE"] + "/" + data_to_send["mac_addr"]
+                topic = app.config["API_OBJ_DELETE"] + data_to_send["mac_addr"]
+                print(topic)
                 MqttClientPub().bootstrap_mqtt().pub(topic, json.dumps(data_to_send))
             except Exception as e:
                 print(e)

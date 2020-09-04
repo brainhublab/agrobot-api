@@ -78,7 +78,7 @@ class MqttClientSub(object):
         # TODO: Make instruction with new data
         # InstructionGenerator
 
-        equipped_topic = self.event_handler_rule + "/" + ctrl_client_id
+        equipped_topic = self.event_handler_rule + ctrl_client_id
         try:
             self._mqttPubMsg(client, equipped_topic, data)
         except Exception as e:
