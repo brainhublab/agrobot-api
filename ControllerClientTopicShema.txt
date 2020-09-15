@@ -1,33 +1,35 @@
-ClientRegistrator --> subscribe --> (topic) ControllerConfigs/receiveNewController
-                  --> publishing --> (topic) UI/receiveNewController
-    => on_message =>
-        create:
-          ClientController - MAC:
-            /    action      /       topic                     /
-            ----------------------------------------------------
-            -->  publishing --> ControllerConfigs/send/(MAC)
-            -->  subscribe --> ControllerConfigs/receive/(MAC)
+ClientRegistrator --> sub --> (topic) ctrl/auth
+                  --> pub --> (topic) ui/ctrl/auth
 
-            -->  subscribe --> ApiConfigUpdate/(MAC)
-            -->  subscribe --> ApiNewRule/(MAC)
-            -->  subscribe --> ApiObjDelete/(MAC)
 
-            -->  publishing --> ControllerRules/send/(MAC)
-            -->  subscribe --> ControllersRules/receive/(MAC)
+ctrl_cli - MAC:
+  /    action      /       topic                     /
+  ----------------------------------------------------
+  -->  pub ctrl/auth
+  -->  sub ctrl/+/configs/update
+  -->  pub ctrl/+/data/#
+  -->  sub ctrl/+/data/#
+  -->  pub ctrl/+/logs
+  -->  pub ctrl/+/healthcheck
 
-            -->  publishing --> EventHandler/data
-            -->  subscribe --> EventHandler/rule/(MAC)
 
-            -->  subscribe --> ControllerData/(MAC)
-            -->  subscribe --> ControllerLogs/(MAC)
+mqtt_master_cli - MAC:
+  /    action      /       topic                     /
+  ----------------------------------------------------
+  -->  sub --> ctrl/auth
+  -->  sub --> ctrl/+/data/out/#
+  -->  sub --> ctrl/+/logs
+  -->  sub --> ctrl/+/healthcheck
+  -->  sub --> api/objDelete/#
 
-          ClientControllerWebSocket - 'w' + MAC:
-            /    action      /       topic                     /
-            ----------------------------------------------------
+  -->  pub --> ui/crtl/auth           (over websocket)
+  -->  pub --> ui/ctrl/+/data/out/#   (over websocket)
+  -->  pub --> ui/ctrl/+/logs         (over websocket)
+  -->  pub --> ui/ctrl/+/healthcheck  (over websocket)
 
-            -->  subscribe --> ControllerData/(MAC)
-            -->  subscribe --> ControllerLogs/(MAC)
-            -->  subscribe --> ApiObjDelete/(MAC)
 
-            -->  publishing --> UI/ControllerData/(MAC)
-            -->  publishing --> UI/ControllerLogs/(MAC)
+api_cli - MAC:
+  /    action      /       topic                     /
+  ----------------------------------------------------
+  -->  pub --> ctrl/+/configs/update
+  -->  pub --> api/objDelete/#

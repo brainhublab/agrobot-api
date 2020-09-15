@@ -2,7 +2,8 @@ __pycache__
 *.pyc
 *.log
 .env
-.env-communication-service
+.env-mqtt-master
+backups
 test_scripts
 mosquitto/config/working_conf
 woked_local_envs_docker_yml
