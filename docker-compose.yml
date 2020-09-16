@@ -55,7 +55,7 @@ services:
         - "${BROKER_PORT}"
         - 9001
       env_file:
-        - '.env-mqtt-master'
+        - '.env'
       ports:
         - "${BROKER_PORT}:${BROKER_PORT}"
         - 9001:9001
@@ -74,7 +74,7 @@ services:
       restart: always
       container_name: mqtt_master
       env_file:
-        - '.env-mqtt-master'
+        - '.env'
       volumes:
         - ./mqtt_master:/usr/src/mqtt_master
       depends_on:

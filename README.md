@@ -18,13 +18,12 @@
 </div>
 
 ## ✨ Features / Tech stack
-
+-   Communicate with hardware parts, store data and manage configurations
 - 📦 Docker
 - 📦 Docker-compose
-- 🛡 mosquitto mqtt broker
-- 🛡 Paho mqtt client
 - 🌍 Python
--   Timescaledb
+- 🛡 Eclipse Mosquitto broker
+- 🛡 Paho-mqtt client
 
 ## 📦 Install
 

@@ -13,12 +13,14 @@
 </div>
 
 ## ✨ Features / Tech stack
-
+-   Flask
 - 📦 Flask-restful
--   PostgreSQL
-- 🛡 Paho-mqtt client
 - 🌍 Python
--   Timescaledb
+- 🛡 Paho-mqtt client
+-   Nginx
+-   PostgreSQL
+- 📦 SQLAlchemy
+-   TimescaleDB
 
 
 ## 🔨 Usage
