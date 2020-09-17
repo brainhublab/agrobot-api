@@ -26,21 +26,22 @@
 ## 🔨 Usage
 <p>When agrobot_api container run for first time may need to migrate db handly. Also need to extend the database with TimescaleDB </p>
 
-```bash
-# to enter agrobot_api container run this in terminal:
-docker exec -it agrobot_api /bin/ash
+0. Migrate DB tables:
+      - Enter api container:
+        ```bash
+        docker exec -it agrobot_api /bin/ash
+        ```
+      - Migrarate DB tables:
+          ```bash
+          flask db migrate
+          ```
+      - Create a super user:
+          ```bash
+          flask db upgrade
+          ```
+      !!! In case of sqlalchemy-utils error check [this](https://stackoverflow.com/questions/54055469/how-to-use-sqlalchemy-utils-in-a-sqlalchemy-model):
 
-# once you enter the container run:
-flask db migrate
-flask db upgrade
-# in case of error check this:
-  https://stackoverflow.com/questions/54055469/how-to-use-sqlalchemy-utils-in-a-sqlalchemy-model
-# then exit
-
-# check out this to extend the database with TimescaleDB:
-  https://docs.timescale.com/latest/getting-started/setup
-
-```
+1. Extend PostgreSQL with TimescaleDB view [this](https://docs.timescale.com/latest/getting-started/setup):
 
 
 ## 🤝 Contact
