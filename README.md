@@ -28,20 +28,21 @@
 ## 📦 Install
 0. Clone the project
 1. Enter project directory
-    ```bash
+    ```
     cd project directory
     ```
 2. Build images in docker compose:
-    ```bash
+    ```
     docker-compose build
     ```
 3. Run images:
-    ```bash
+    ```
     docker-compose up
     ```
 4. Go to `agrobot_api/README.md` for DB setup instructions
 
-5. View :
+## Usage
+1. View :
     - `tests/localhost_tests`(implement controller funcs)
     - `tests/insomnia.json`(exported insomnia requests)
     - `ControllerClientTopicShema.txt`(user - topic rules)
