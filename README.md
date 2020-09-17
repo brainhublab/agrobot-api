@@ -31,15 +31,16 @@
     ```
     cd project directory
     ```
-2. Build images in docker compose:
+2. Create .env file and fill in (use env-distrib for template)
+3. Build images in docker compose:
     ```
     docker-compose build
     ```
-3. Run images:
+4. Run images:
     ```
     docker-compose up
     ```
-4. Go to `agrobot_api/README.md` for DB setup instructions
+5. Go to `agrobot_api/README.md` for DB setup instructions
 
 ## Usage
 1. View :
