@@ -42,7 +42,7 @@ class MqttMasterClient(object):
             sleep(1)
             self.get_av_ctrl()
 
-    """     SUBSCRIBERS / CALLBACKS CONNECTIONS AND CLIENTS REGISTRY (every reconnection)    """
+    # ***                            SUBSCRIBERS                             ***
     def on_connect(self, client, userdata, flags, rc):
         self.connect = True
         if self.listener:
@@ -51,7 +51,6 @@ class MqttMasterClient(object):
                                             self.on_message_from_ctrl_auth)
 
             self.web_client = web_cli(self.logger).bootstrap()
-
             self.ctrl_clients_refs.append(self.web_client)
 
             av_controllers = self.get_av_ctrl()
@@ -60,10 +59,10 @@ class MqttMasterClient(object):
                 ctrl_client = ctrl_cli(self.ctrl_clients_refs, self.logger).bootstrap(client_id)
                 self.ctrl_clients_refs.append(ctrl_client)
 
-                """ send message with new controller data to UI mqtt client """
+                # send message with new controller data to UI mqtt client
                 self._mqttPubMsg(self.web_client, "ui/" + self.ctrl_auth, json.dumps({"ima": "ima"}))
 
-    """                              CALLBACKS                               """
+    # ***                              CALLBACKS                               ***
     def on_message(self, client, userdata, msg):
         self.logger.info("\n[???] [{0}], [{1}] - [{2}]\n".format(client._client_id, msg.topic, msg.payload))
 
@@ -87,7 +86,7 @@ class MqttMasterClient(object):
             n_ctrl_cli = ctrl_cli(self.ctrl_clients_refs, self.logger).bootstrap(client_id)
             self.ctrl_clients_refs.append(n_ctrl_cli)
 
-            """ send message with new controller data to UI mqtt client """
+            # send message with new controller data to UI mqtt client
             self._mqttPubMsg(self.web_client, "ui/" + msg.topic, json.dumps({"ima": "ima"}))
         elif new_controller.status_code == 409:
             # in case controller exist in DB
@@ -97,7 +96,8 @@ class MqttMasterClient(object):
         else:
             self.logger.warning("\n[!][*] [{0}] [Api] [{1}]".format(client._client_id.decode(),
                                                                     new_controller.status_code == 201))
-    """                                UTILS                                 """
+    # ***                                UTILS                                 ***
+
     def on_log(self, client, userdata, level, buf):
         self.logger.info("\n[*] [{0}] [{1}] [{2}]\n".format(client._client_id.decode(), level, buf))
 

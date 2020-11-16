@@ -1,17 +1,11 @@
 import paho.mqtt.client as paho
 import os
-import socket
-from time import sleep
-from random import uniform
-import json
 import random
 import logging
 logging.basicConfig(level=logging.INFO)
 import sys
 sys.path.insert(0, os.path.abspath('.'))
 
-
-# Refactored original source - https://github.com/mariocannistra/python-paho-mqtt-for-aws-iot
 
 class MqttClientPub(object):
 
@@ -46,7 +40,7 @@ class MqttClientPub(object):
     def start(self):
         while True:
             self.mqttc.loop_start()
-            if self.connect == True:
+            if self.connect is True:
                 self.mqttc.publish(self.topic, self.data, qos=2)
                 self.mqttc.loop_stop()
                 self.mqttc.disconnect()

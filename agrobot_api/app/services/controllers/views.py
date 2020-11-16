@@ -9,7 +9,7 @@ from ..mqtt_client.mqtt_client_publisher import MqttClientPub
 import json
 
 # Parse arguments from requests
-# official documentation: https://flask-restful.readthedocs.io/en/0.3.5/reqparse.html
+# official documentation: https://flask-restful.readthedocs.io/en/latest/reqparse.html
 
 parser_post = parser.copy()
 parser_post.add_argument("mcuType",

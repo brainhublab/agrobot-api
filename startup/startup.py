@@ -10,7 +10,7 @@ import random
 class GrowAutomationsStartUp(object):
     def __init__(self):
         self.api_env_path = "../.env"
-        self.communication_env_path = "../.env-communication-service"
+        self.mosquitto_configs_path = "../mosquitto/config"
         self.access_controll_list_path = "../mosquitto/config/access_control_list.acl"
         self.mosquitto_configs_path = "../mosquitto/config/mosquitto.conf"
         self.sysLogger = self.__reg_logger()
@@ -103,6 +103,7 @@ class GrowAutomationsStartUp(object):
             POSTGRES_PORT = 5432
             TOKEN = self.random_str_generator(40, string.ascii_uppercase + string.ascii_lowercase
                                                                          + string.digits + ".-_")
+            API_PORT = 5000
             BROKER_PORT = 1883
             CONTROLLER_MQTT_USER = "miagiContr"
             CONTROLLER_MQTT_PASSWORD = self.random_str_generator()
@@ -122,7 +123,7 @@ class GrowAutomationsStartUp(object):
             self.uiLogger.info("  BROKER_PORT: %s\n" % BROKER_PORT)
 
         else:
-            used_ports = ["5000", "80"]
+            used_ports = ["80"]
             used_usrs = []
 
             POSTGRES_DB = input("[~] Data base name: ")
@@ -130,6 +131,7 @@ class GrowAutomationsStartUp(object):
             POSTGRES_PASSWORD = self.pwd_approver("[~] Data base password: ")
             POSTGRES_PORT = self.port_approver(input("[~] Data base port: "), used_ports)
             TOKEN = input("[~] API token: ")
+            API_PORT = self.port_approver(input("[~] Api port: "), used_ports)
             BROKER_PORT = self.port_approver(input("[~] Broker port: "), used_ports)
             CONTROLLER_MQTT_USER = self.usr_approver(input("[~] CONTROLLER MQTT USER: "), used_usrs)
             CONTROLLER_MQTT_PASSWORD = self.pwd_approver("[~] PASSWORD: ")
@@ -144,33 +146,28 @@ class GrowAutomationsStartUp(object):
         env = Environment(loader=file_loader)
 
         env_api_tmp = env.get_template('env_api_tmp.txt')
-        env_api_content = env_api_tmp.render(POSTGRES_DB=POSTGRES_DB,
+        env_api_content = env_api_tmp.render(API_PORT=API_PORT,
+                                             BROKER_PORT=BROKER_PORT,
+                                             POSTGRES_DB=POSTGRES_DB,
                                              POSTGRES_USER=POSTGRES_USER,
                                              POSTGRES_PASSWORD=POSTGRES_PASSWORD,
                                              POSTGRES_PORT=POSTGRES_PORT,
-                                             BROKER_PORT=BROKER_PORT,
+                                             TOKEN=TOKEN,
+                                             CONTROLLER_MQTT_USER=CONTROLLER_MQTT_USER,
+                                             CONTROLLER_MQTT_PASSWORD=CONTROLLER_MQTT_PASSWORD,
+                                             COM_MQTT_USER=COM_MQTT_USER,
+                                             COM_MQTT_PASSWORD=COM_MQTT_PASSWORD,
                                              API_MQTT_USER=API_MQTT_USER,
                                              API_MQTT_PASSWORD=API_MQTT_PASSWORD,
-                                             TOKEN=TOKEN)
+                                             UI_MQTT_USER=UI_MQTT_USER,
+                                             UI_MQTT_PASSWORD=UI_MQTT_PASSWORD)
 
-        with open(self.api_env_path, "w+") as f:
+        if not os.path.exists(self.mosquitto_configs_path):
+            os.makedirs(self.mosquitto_configs_path)
+
+        with open(self.api_env_path, "+w") as f:
             f.write(env_api_content)
             self.sysLogger.info(" API environment created --> %s " % self.api_env_path)
-
-        env_communication_service_tmp = env.get_template('env_communication_service_tmp.txt')
-        env_com_content = env_communication_service_tmp.render(BROKER_PORT=BROKER_PORT,
-                                                               TOKEN=TOKEN,
-                                                               CONTROLLER_MQTT_USER=CONTROLLER_MQTT_USER,
-                                                               CONTROLLER_MQTT_PASSWORD=CONTROLLER_MQTT_PASSWORD,
-                                                               COM_MQTT_USER=COM_MQTT_USER,
-                                                               COM_MQTT_PASSWORD=COM_MQTT_PASSWORD,
-                                                               API_MQTT_USER=API_MQTT_USER,
-                                                               API_MQTT_PASSWORD=API_MQTT_PASSWORD,
-                                                               UI_MQTT_USER=UI_MQTT_USER,
-                                                               UI_MQTT_PASSWORD=UI_MQTT_PASSWORD)
-        with open(self.communication_env_path, "w+") as f:
-            f.write(env_com_content)
-            self.sysLogger.info(" Communication service environment created --> %s " % self.communication_env_path)
 
         access_control_list_tmp = env.get_template('access_control_list_tmp.txt')
         access_control_list_content = access_control_list_tmp.render(CONTROLLER_MQTT_USER=CONTROLLER_MQTT_USER,
@@ -191,14 +188,10 @@ class GrowAutomationsStartUp(object):
 
     def start(self):
         self.uiLogger.info("\n\n")
-        self.uiLogger.info(" dP**b8 88**Yb  dP*Yb  Yb        dP 88 88b 88 "
-                           "       db    88   88 888888  dP*Yb  8b    d8    db    888888 88  dP*Yb  88b 88 .dP*Y8")
-        self.uiLogger.info("dP   `* 88__dP dP   Yb  Yb  db  dP  88 88Yb88 "
-                           "      dPYb   88   88   88   dP   Yb 88b  d88   dPYb     88   88 dP   Yb 88Yb88 `Ybo.*")
-        self.uiLogger.info("Yb  *88 88*Yb  Yb   dP   YbdPYbdP   88 88 Y88 "
-                           "     dP__Yb  Y8   8P   88   Yb   dP 88YbdP88  dP__Yb    88   88 Yb   dP 88 Y88 o.`Y8b")
-        self.uiLogger.info(" YboodP 88  Yb  YbodP     YP  YP    88 88  Y8 "
-                           "    dP****Yb `YbodP'   88    YbodP  88 YY 88 dP====Yb   88   88  YbodP  88  Y8 8bodP'")
+        self.uiLogger.info("""   db     dP""b8 88""Yb  dP"Yb  88""Yb  dP"Yb  888888 """)
+        self.uiLogger.info("""  dPYb   dP   `" 88__dP dP   Yb 88__dP dP   Yb   88   """)
+        self.uiLogger.info(""" dP__Yb  Yb  "88 88"Yb  Yb   dP 88""Yb Yb   dP   88   """)
+        self.uiLogger.info("""dP****Yb  YboodP 88  Yb  YbodP  88oodP  YbodP    88   """)
 
         self.uiLogger.info("\n\n\n\n")
         self.uiLogger.info("[*] Please select option for configuration files creation:\n")

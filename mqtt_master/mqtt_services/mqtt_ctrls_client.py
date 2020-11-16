@@ -1,7 +1,6 @@
 import paho.mqtt.client as paho
 import os, sys
 from time import sleep
-import json
 sys.path.insert(0, os.path.abspath('..'))
 from .ctrl_types_shema import types
 from .db_manager import DBmanager
@@ -27,14 +26,14 @@ class MqttCtrlClient(object):
         self.ctrl_clients_refs = ctrl_clients_refs
         self.logger = logger
 
-    """     SUBSCRIBERS / CALLBACKS CONNECTION REGISTRY (every reconnection)    """
+    # ***                            SUBSCRIBERS                             ***
     def on_connect(self, client, userdata, flags, rc):
-        """ client_id is MAC address of controller/sensor """
+        # client_id is MAC address of controller/sensor
         client_id = client._client_id.decode()
         self.db_mngr = db_manager()
         self.db_mngr.connect()
 
-        """ Create the required subscribers """
+        # Create the required subscribers
         client.subscribe(self.api_obj_delete + client_id)
         client.subscribe(self.ctrl_data_out.format(client_id) + "#")
         client.subscribe(self.ctrl_logs.format(client_id))
@@ -49,7 +48,7 @@ class MqttCtrlClient(object):
         client.message_callback_add(self.ctrl_health.format(client_id),
                                     self.on_message_from_ctrl_health)
 
-    """                              CALLBACKS                               """
+    # ***                              CALLBACKS                               ***
     def on_messagee(self, client, userdata, msg):
         self.logger.info("\n[???] [{0}], [{1}] - [{2}]\n".format(client._client_id, msg.topic, msg.payload))
 
@@ -86,7 +85,7 @@ class MqttCtrlClient(object):
         client.loop_stop()
         self.logger.info("\n[*] [DISCONNECT] [{0}]\n".format(client_id))
 
-    """                            CLIENT CONFIGS                            """
+    # ***                           CLIENT CONFIGS                           ***
     def bootstrap(self, client_id):
         mqtt_controller_cli = paho.Client(client_id=client_id, protocol=paho.MQTTv311)
         self._broker_auth(mqtt_controller_cli)

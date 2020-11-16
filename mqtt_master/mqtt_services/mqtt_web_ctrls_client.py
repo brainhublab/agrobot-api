@@ -1,12 +1,11 @@
 import paho.mqtt.client as paho
 import os
 from time import sleep
-import json
 
 
 class MqttCtrlWebClient(object):
     def __init__(self, logger):
-        """ basic topic """
+        """ basic topics """
         self.ctrl_data_out = os.environ.get("CTRL_DATA_OUT")
         self.ctrl_logs = os.environ.get("CTRL_LOGS")
         self.ctrl_health = os.environ.get("CTRL_HEALTH")
@@ -21,7 +20,7 @@ class MqttCtrlWebClient(object):
         self.connect = False
         self.logger = logger
 
-    """                              CALLBACKS                               """
+    # ***                            SUBSCRIBERS                             ***
     def on_connect(self, client, userdata, flags, rc):
         """ Create the required subscribers """
         client.subscribe(self.ctrl_data_out.format("+") + "#")
@@ -54,18 +53,17 @@ class MqttCtrlWebClient(object):
         client.username_pw_set(username=self.com_user, password=self.com_pwd)
 
     def on_disconnect(self, client, userdata, rc=0):
-        client_id = client._client_id.decode()
+        """ Unsubscribe topics and disconnect"""
         sub_topics = [self.ctrl_logs.format("+"), self.ctrl_data_out.format("+") + "#",
                       self.ctrl_health.format("+")]
 
         for topic in sub_topics:
-            client.unsubscribe(topic + client_id[1:])
-        """ Disconnect controller client and remove from client references list"""
+            client.unsubscribe(topic)
         client.disconnect()
         client.loop_stop()
         self.logger.info("\n[*] [DISCONNECT] [{0}]\n".format(client._client_id.decode()))
 
-    """                            CLIENT CONFIGS                            """
+    # ***                            CLIENT CONFIGS                            ***
     def bootstrap(self):
         mqtt_controller_cli = paho.Client(client_id="web_cli", clean_session=False,
                                           protocol=paho.MQTTv311, transport='websockets')

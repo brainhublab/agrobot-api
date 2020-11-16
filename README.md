@@ -31,7 +31,16 @@
     ```
     cd project directory
     ```
-2. Create .env file and fill in (use env-distrib for template)
+2. Create .env file and mosquitto configs
+    - run startup program (python v3)
+    ```
+    python /startup/startup.py
+    ```
+    - choose option '0' to autogenerate conf and env files
+      - /.env
+      - /mosquitto/config/access_control_list.acl
+      - /mosquitto/config/mosquitto.conf
+      
 3. Build images in docker compose:
     ```
     docker-compose build

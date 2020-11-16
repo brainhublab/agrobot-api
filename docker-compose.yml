@@ -27,7 +27,7 @@ services:
 
     db:
       image: timescale/timescaledb:latest-pg12
-      container_name: local_postgres_db
+      container_name: agrobot_db
       restart: always
       env_file:
         - '.env'

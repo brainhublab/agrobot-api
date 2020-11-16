@@ -2,9 +2,6 @@ import os
 
 SECRET_KEY = 'p9Bv<3Eid9%$i01'
 
-# """ Use pymysql instead MySQLdb, because MySQLdb is not supported by Python3 """
-# SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://local_admin:12345678@localhost/local_db'
-
 HOST = "http://localhost:8081/"
 
 POSTGRES_DB = os.environ.get("POSTGRES_DB")

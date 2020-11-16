@@ -1,20 +1,24 @@
+'+' - will be replaced with controller ID in practice
+'#' - mean that the subscriber of the topic will subscribe any variety of extensions the topic
+
+
 ClientRegistrator --> sub --> (topic) ctrl/auth
                   --> pub --> (topic) ui/ctrl/auth
 
 
 ctrl_cli - MAC:
-  /    action      /       topic                     /
+  /  action  /  topic  /                             /
   ----------------------------------------------------
-  -->  pub ctrl/auth
-  -->  sub ctrl/+/configs/update
-  -->  pub ctrl/+/data/#
-  -->  sub ctrl/+/data/#
-  -->  pub ctrl/+/logs
-  -->  pub ctrl/+/healthcheck
+  -->  pub --> ctrl/auth
+  -->  sub --> ctrl/+/configs/update
+  -->  pub --> ctrl/+/data/#
+  -->  sub --> ctrl/+/data/#
+  -->  pub --> ctrl/+/logs
+  -->  pub --> ctrl/+/healthcheck
 
 
 mqtt_master_cli - MAC:
-  /    action      /       topic                     /
+  /  action  /  topic  /                             /
   ----------------------------------------------------
   -->  sub --> ctrl/auth
   -->  sub --> ctrl/+/data/out/#
@@ -29,7 +33,7 @@ mqtt_master_cli - MAC:
 
 
 api_cli - MAC:
-  /    action      /       topic                     /
+  /  action  /  topic  /                             /
   ----------------------------------------------------
   -->  pub --> ctrl/+/configs/update
   -->  pub --> api/objDelete/#

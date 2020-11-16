@@ -24,7 +24,7 @@
 
 
 ## 🔨 Install
-<p>When agrobot_api container run for first time may need to migrate db handly. Also need to extend the database with TimescaleDB </p>
+<p>When agrobot api container run for first time you may need to migrate db handly. Also you will need to extend the database with TimescaleDB </p>
 
 0. Migrate DB tables:
       - Enter api container:
@@ -35,7 +35,7 @@
           ```
           flask db migrate
           ```
-      - Create a super user:
+      - Upgrade DB tables:
           ```
           flask db upgrade
           ```
